@@ -7,7 +7,13 @@
 
 ### Running Dash code
 
-`./waf --run="tcp-stream --simulationId=1 --numberOfClients=3 --adaptationAlgo=panda --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+
+`
+./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+`
+
+`
+export NS_LOG="RLAlgorithm"
 `
 
 ### Dash arguments
