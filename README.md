@@ -20,7 +20,9 @@
 ## ns3-gym
 
 
-[OpenAI Gym](https://gym.openai.com/) is a toolkit for reinforcement learning (RL) widely used in research. The network simulator [ns–3](https://www.nsnam.org/) is the de-facto standard for academic and industry studies in the areas of networking protocols and communication technologies. ns3-gym is a framework that integrates both OpenAI Gym and ns-3 in order to encourage usage of RL in networking research.
+> [OpenAI Gym](https://gym.openai.com/) is a toolkit for reinforcement learning (RL) widely used in research. The network simulator [ns–3](https://www.nsnam.org/) is the de-facto standard for academic and industry studies in the areas of networking protocols and communication technologies. ns3-gym is a framework that integrates both OpenAI Gym and ns-3 in order to encourage usage of RL in networking research.
+
+ - Reference : https://github.com/tkn-tub/ns3-gym
 
 ### Installation
 
@@ -73,15 +75,17 @@ cd ./scratch/opengym
 ```
 
 
-## DASH-NS3
-A simulation model for HTTP-based adaptive streaming applications
+## DASH-ns3
 
-If you use the model, please reference "Simulation Framework for HTTP-Based Adaptive Streaming Applications" by Harald Ott, Konstantin Miller, and Adam Wolisz, 2017
+> A simulation model for HTTP-based adaptive streaming applications. 
 
-### NEEDED FILES
+ - Reference : https://github.com/haraldott/dash
+
+
 Just drop the repository into the contrib/ folder of ns-3 (only works with ns version >= 3.27)
 
-### PROGRAM EXECUTION
+### Program Execution
+
 The following parameters have to be specified for program execution:
 - simulationId: The Id of this simulation, to distinguish it from others, with same algorithm and number of clients, for logging purposes.
 - numberOfClients: The number of streaming clients used for this simulation.
@@ -99,7 +103,8 @@ One possible execution of the program would be:
 ```
 
 
-### ADDING NEW ADAPTATION ALGORITHMS
+### Adding new Adaptation Algorithm
+
 The adaptation algorithm base class is located in src/applications/model/adaptation-algorithm/. If it is desired to implement a new adaptation algorithm, a separate source and header file for the algorithm can be created in the adaptation-algorithm/ folder. An example of how a header file looks like can be seen here:
 
 ```c++
@@ -171,44 +176,6 @@ The resulting logfiles will be written to mylogs/algorithmName/numberOfClients/
 
 
 
-## Examples
-
-
-All examples can be found [here](./scratch/).
-
-## Basic Interface
-
-1. Example Python script. Note, that `gym.make('ns3-v0')` starts ns-3 simulation script located in current working directory.
-```
-import gym
-import ns3gym
-import MyAgent
-
-env = gym.make('ns3-v0')
-obs = env.reset()
-agent = MyAgent.Agent()
-
-while True:
-  action = agent.get_action(obs)
-  obs, reward, done, info = env.step(action)
-
-  if done:
-    break
-env.close()
-```
-2. Any ns-3 simulation script can be used as a Gym environment. This requires only to instantiate OpenGymInterface and implement the ns3-gym C++ interface consisting of the following functions:
-```
-Ptr<OpenGymSpace> GetObservationSpace();
-Ptr<OpenGymSpace> GetActionSpace();
-Ptr<OpenGymDataContainer> GetObservation();
-float GetReward();
-bool GetGameOver();
-std::string GetExtraInfo();
-bool ExecuteActions(Ptr<OpenGymDataContainer> action);
-```
-Note, that the generic ns3-gym interface allows to observe any variable or parameter in a simulation.
-
-A more detailed description can be found in our [Paper](http://www.tkn.tu-berlin.de/fileadmin/fg112/Papers/2019/gawlowicz19_mswim.pdf).
 
 
 Contact
