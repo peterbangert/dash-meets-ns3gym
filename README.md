@@ -11,11 +11,11 @@
 
 2. Follow section below for setting up ns3-gym 
   
-  - [ns3-gym setup](#ns3-gym)
+   - [ns3-gym setup](#ns3-gym)
 
 3. Follow section below for setting up DASH in ns3
 
-  - [dash setup](#dash-ns3)
+   - [dash setup](#dash-ns3)
 
 ## ns3-gym
 
