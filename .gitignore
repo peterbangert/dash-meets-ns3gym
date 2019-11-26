@@ -11,6 +11,10 @@ waf3-*-*/
 # Log files
 **/logs
 *.log
+/dash-log-files
+dash-log-files/
+minstrel-*.txt
+'*
 
 #build directories
 /build
