@@ -60,23 +60,6 @@ apt-get install protobuf-compiler
 pip3 install ./src/opengym/model/ns3gym
 ```
 
-5. (Optional) Install all libraries required by your agent (like tensorflow, keras, etc.).
-
-6. Run example:
-```
-cd ./scratch/opengym
-./simple_test.py
-```
-
-7. (Optional) Start ns-3 simulation script and Gym agent separately in two terminals (useful for debugging):
-```
-# Terminal 1
-./waf --run "opengym"
-
-# Terminal 2
-cd ./scratch/opengym
-./test.py --start=0
-```
 
 
 ## DASH-ns3
@@ -85,80 +68,8 @@ cd ./scratch/opengym
 
  - Reference : https://github.com/haraldott/dash
 
+DASH ns3 is already setup to run out of the box in this repository, for information on how DASH is setup and how to develop with DASH, please see the referenced repository above.
 
-Just drop the repository into the contrib/ folder of ns-3 (only works with ns version >= 3.27)
-
-
-### Adding a new Adaptation Algorithm
-
-The adaptation algorithm base class is located in src/applications/model/adaptation-algorithm/. If it is desired to implement a new adaptation algorithm, a separate source and header file for the algorithm can be created in the adaptation-algorithm/ folder. An example of how a header file looks like can be seen here:
-
-```c++
-#ifndef NEW_ALGORITHM_H
-#define NEW_ALGORITHM_H
-
-#include "tcp-stream-adaptation-algorithm.h"
-
-namespace ns3 {
-/**
- * \ingroup tcpStream
- * \brief Implementation of a new adaptation algorithm
- */
-class NewAdaptationAlgorithm : public AdaptationAlgorithm
-{
-public:
-
-NewAdaptationAlgorithm ( const videoData &videoData,
-                         const playbackData & playbackData,
-       const bufferData & bufferData,
-       const throughputData & throughput );
-
-algorithmReply GetNextRep ( const int64_t segmentCounter );
-};
-} // namespace ns3
-#endif /* NEW_ALGORITHM_H */
-```
-
-An adaptation algorithm must return a data structure 'algorithmReply' containing the following members:
-
-```c++
-int64_t nextRepIndex; // representation level index of the next segement to be downloaded by the client
-int64_t nextDownloadDelay; // delay time in microseconds when the next segment shall be requested from the server
-int64_t decisionTime; // time in microsends when the adaptation algorithm decided which segment to download next, only for logging purposes
-int64_t decisionCase; // indicate in which part of the adaptation algorithm's code the decision was made, which representation level to request next, only for logging purposes
-int64_t delayDecisionCase; // indicate in which part of the adaptation algorithm's code the decision was made, how much time in microsends to wait until the segment shall be requested from server, only for logging purposes
-```
-
-Next, it is necessary to include the following lines to the top of the source file.
-
-```c++
-NS_LOG_COMPONENT_DEFINE ("NewAdaptationAlgorithm");
-NS_OBJECT_ENSURE_REGISTERED (NewAdaptationAlgorithm);
-```
-
-It is obligatory to inherit from AdaptationAlgorithm and implement the algorithmReply GetNextRep ( const int64_t segmentCounter ) function. Then, the header and source files need to be added to src/applications/wscript. Open wscript and add the files with their path, just like the other algorithm files have been added. Additionally, it is necessary to add the name of the algorithm to the if-else-if block in the TcpStreamClient::Initialise (std::string algorithm) function, just like the other implemented algorithms have been added, see the following code taken from tcp-stream-client.cc:
-
-```c++
-if (algorithm == "tobasco")
-  {
-    algo = new TobascoAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput);
-  }
-else if (algorithm == "panda")
-  {
-    algo = new PandaAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput);
-  }
-else if (algorithm == "festive")
-  {
-    algo = new FestiveAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput);
-  }
-else
-  {
-    // Stop program
-  }
-```
-Lastly, the header file of the newly implemented adaptation algorithm needs to be included in the TcpStreamClient header file.
-
-The resulting logfiles will be written to mylogs/algorithmName/numberOfClients/
 
 
 ## Program Execution
@@ -180,7 +91,7 @@ The resulting logfiles will be written to mylogs/algorithmName/numberOfClients/
 #### Example
 
 ```bash
-./waf --run="tcp-stream --simulationId=1 --numberOfClients=3 --adaptationAlgo=panda --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
 ```
 
 
