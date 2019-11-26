@@ -17,6 +17,10 @@
 
    - [dash setup](#dash-ns3)
 
+4. Program Execution
+
+   - [command](#program-execution)
+
 ## ns3-gym
 
 
@@ -84,26 +88,8 @@ cd ./scratch/opengym
 
 Just drop the repository into the contrib/ folder of ns-3 (only works with ns version >= 3.27)
 
-### Program Execution
 
-The following parameters have to be specified for program execution:
-- simulationId: The Id of this simulation, to distinguish it from others, with same algorithm and number of clients, for logging purposes.
-- numberOfClients: The number of streaming clients used for this simulation.
-- segmentDuration: The duration of a segment in microseconds.
-- adaptationAlgo: The name of the adaptation algorithm the client uses for the simulation. The 'pre-installed' algorithms are tobasco, festive and panda.
-- segmentSizeFile: The relative path (from the ns-3.x/ folder) of the file containing the sizes of the segments of the video. The segment sizes have to be provided as a (n, m) matrix, with n being the number of representation levels and m being the total number of segments. A two-segment long, three representations containing segment size file would look like the following:
-
- 1564 22394  
- 1627 46529  
- 1987 121606  
-
-One possible execution of the program would be:
-```bash
-./waf --run="tcp-stream --simulationId=1 --numberOfClients=3 --adaptationAlgo=panda --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
-```
-
-
-### Adding new Adaptation Algorithm
+### Adding a new Adaptation Algorithm
 
 The adaptation algorithm base class is located in src/applications/model/adaptation-algorithm/. If it is desired to implement a new adaptation algorithm, a separate source and header file for the algorithm can be created in the adaptation-algorithm/ folder. An example of how a header file looks like can be seen here:
 
@@ -175,9 +161,32 @@ Lastly, the header file of the newly implemented adaptation algorithm needs to b
 The resulting logfiles will be written to mylogs/algorithmName/numberOfClients/
 
 
+## Program Execution
+
+### Parameters 
+- simulationId 
+- numberOfClients
+- segmentDuration
+  - The duration of a segment in microseconds.
+- adaptationAlgo: 
+  - The name of the adaptation algorithm the client uses for the simulation. The 'pre-installed' algorithms are tobasco, festive and panda.
+- segmentSizeFile
+  - The relative path (from the ns-3.x/ folder) of the file containing the sizes of the segments of the video. The segment sizes have to be provided as a (n, m) matrix, with n being the number of representation levels and m being the total number of segments. A two-segment long, three representations containing segment size file would look like the following:
+
+ 1564 22394  
+ 1627 46529  
+ 1987 121606  
+
+#### Example
+
+```bash
+./waf --run="tcp-stream --simulationId=1 --numberOfClients=3 --adaptationAlgo=panda --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+```
 
 
 
-Contact
-============
+
+
+## Contact
+
 * Peter Bangert, TU-Berlin, petbangert@gmail.com
