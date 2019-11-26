@@ -13,6 +13,7 @@ waf3-*-*/
 *.log
 /dash-log-files
 dash-log-files/
+/dash-log-file/
 minstrel-*.txt
 '*
 
