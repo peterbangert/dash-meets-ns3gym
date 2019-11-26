@@ -564,6 +564,7 @@ TcpStreamClient::LogDownload ()
               << std::setfill (' ') << std::setw (14) << m_transmissionStartReceivingSegment / (double)1000000 << " "
               << std::setfill (' ') << std::setw (12) << m_transmissionEndReceivingSegment / (double)1000000 << " "
               << std::setfill (' ') << std::setw (12) << m_videoData.segmentSize.at (m_currentRepIndex).at (m_segmentCounter) << " "
+              << std::setfill (' ') << std::setw (12) << m_videoData.averageBitrate.at(m_currentRepIndex) << " "
               << std::setfill (' ') << std::setw (12) << "Y\n";
   downloadLog.flush ();
 }
