@@ -44,6 +44,10 @@ MyGymEnv::MyGymEnv ()
   m_lastSegmentIndex = 10;
   m_reward =1;
   m_bufferLast =0;
+  m_lastChunkFinishTime = 0;
+  m_lastChunkStartTime = 0;
+  m_lastChunkSize =0;
+
   
 }
 
@@ -58,6 +62,9 @@ MyGymEnv::MyGymEnv (int64_t highestRepIndex, int64_t lastSegmentIndex)
   m_lastSegmentIndex = lastSegmentIndex;
   m_reward =1;
   m_bufferLast =0;
+  m_lastChunkFinishTime = 0;
+  m_lastChunkStartTime = 0;
+
   
 }
 
@@ -90,16 +97,34 @@ Ptr<OpenGymSpace>
 MyGymEnv::GetObservationSpace()
 {
   NS_LOG_FUNCTION (this);
-  uint32_t numdata = 1;
-  int64_t low = -2000000;
-  int64_t high = 2000000;  // hardcoded buffer size from tcp-stream.cc
+  
+  uint32_t buffernum = 2000000;
+  uint32_t lastReq = m_lastSegmentIndex;
+  uint32_t lastQual = 8;
+  uint32_t lastchunkfinishtime = 2000000;
+  uint32_t lastchunkstarttime = 2000000;
+  uint32_t rebuffertime = 2000000;
+  uint32_t lastchunksize = 0;
+  
+  Ptr<OpenGymDiscreteSpace> buffer = CreateObject<OpenGymDiscreteSpace> (buffernum);
+  Ptr<OpenGymDiscreteSpace> lastRequest = CreateObject<OpenGymDiscreteSpace> (lastReq);
+  Ptr<OpenGymDiscreteSpace> lastQuality = CreateObject<OpenGymDiscreteSpace> (lastQual);
+  Ptr<OpenGymDiscreteSpace> lastChunkFinishTime = CreateObject<OpenGymDiscreteSpace> (lastchunkfinishtime);
+  Ptr<OpenGymDiscreteSpace> lastChunkStartTime = CreateObject<OpenGymDiscreteSpace> (lastchunkstarttime);
+  Ptr<OpenGymDiscreteSpace> RebufferTime = CreateObject<OpenGymDiscreteSpace> (rebuffertime);
+  Ptr<OpenGymDiscreteSpace> lastChunkSize = CreateObject<OpenGymDiscreteSpace> (lastchunksize);
 
-  // Observation will be buffer load and num segments in buffer
 
-  std::vector<uint32_t> shape = {numdata,};
-  std::string dtype = TypeNameGet<uint32_t> ();
-  Ptr<OpenGymBoxSpace> space = CreateObject<OpenGymBoxSpace> (low, high, shape, dtype);
-  NS_LOG_UNCOND ("GetObservationSpace: " << space);
+  Ptr<OpenGymDictSpace> space = CreateObject<OpenGymDictSpace> ();
+  space->Add("buffer", buffer);
+  space->Add("lastRequest", lastRequest);
+  space->Add("lastQuality", lastQuality);
+  space->Add("lastChunkFinishTime", lastChunkFinishTime);
+  space->Add("lastChunkStartTime", lastChunkStartTime);
+  space->Add("RebufferTime", RebufferTime);
+  space->Add("lastChunkSize", lastChunkSize);
+  
+  NS_LOG_UNCOND ("MyGetObservationSpace: " << space);
   return space;
 }
 
@@ -144,15 +169,46 @@ Ptr<OpenGymDataContainer>
 MyGymEnv::GetObservation()
 {
   NS_LOG_FUNCTION (this);
+  /**
   uint32_t numdata = 1;
   std::vector<uint32_t> shape = {numdata,};
   Ptr<OpenGymBoxContainer<uint32_t> > box = CreateObject<OpenGymBoxContainer<uint32_t> >(shape);
 
   box->AddValue(m_bufferNow - m_bufferLast);
-  
-  NS_LOG_UNCOND ("GetObservation: " << box);
-  return box;
+  **/
+  int64_t rebuffertime = 0;
+
+  NS_LOG_UNCOND ("REP INDEX: " << m_new_rep_index);
+
+  Ptr<OpenGymDiscreteContainer> buffer = CreateObject<OpenGymDiscreteContainer> ( );
+  Ptr<OpenGymDiscreteContainer> lastRequest = CreateObject<OpenGymDiscreteContainer> ();
+  Ptr<OpenGymDiscreteContainer> lastQuality = CreateObject<OpenGymDiscreteContainer> ();
+  Ptr<OpenGymDiscreteContainer> lastChunkFinishTime = CreateObject<OpenGymDiscreteContainer> ();
+  Ptr<OpenGymDiscreteContainer> lastChunkStartTime = CreateObject<OpenGymDiscreteContainer> ();
+  Ptr<OpenGymDiscreteContainer> RebufferTime = CreateObject<OpenGymDiscreteContainer> ();
+  Ptr<OpenGymDiscreteContainer> lastChunkSize = CreateObject<OpenGymDiscreteContainer> ();
+  buffer->SetValue(m_bufferNow / 1000000);
+  lastRequest->SetValue(m_segmentCounter);
+  lastQuality->SetValue(m_new_rep_index);
+  lastChunkFinishTime->SetValue(m_lastChunkFinishTime / 1000000);
+  lastChunkStartTime->SetValue(m_lastChunkStartTime /1000000);
+  RebufferTime->SetValue(rebuffertime);
+  lastChunkSize->SetValue(m_lastChunkSize);
+
+  Ptr<OpenGymDictContainer> space = CreateObject<OpenGymDictContainer> ();
+  space->Add("buffer", buffer);
+  space->Add("lastRequest", lastRequest);
+  space->Add("lastquality", lastQuality);
+  space->Add("lastChunkFinishTime", lastChunkFinishTime);
+  space->Add("lastChunkStartTime", lastChunkStartTime);
+  space->Add("RebufferTime", RebufferTime);
+  space->Add("lastChunkSize", lastChunkSize);
+
+  NS_LOG_UNCOND ("GetObservation: " << space);
+  return space;
 }
+
+
 
 /*
 Define reward function
@@ -216,11 +272,18 @@ MyGymEnv::ClearObs()
 }
 
 void
-MyGymEnv::UpdateState(int64_t segmentCounter,int64_t bufferNow)
+MyGymEnv::UpdateState(int64_t segmentCounter,
+  int64_t bufferNow, 
+  int64_t lastchunkfinishtime, 
+  int64_t lastchunkstarttime, 
+  int64_t lastchunksize)
 {
+  m_lastChunkFinishTime = lastchunkfinishtime;
+  m_lastChunkStartTime = lastchunkstarttime;
   m_segmentCounter =segmentCounter;
   m_bufferLast = m_bufferNow;
   m_bufferNow = bufferNow;
+  m_lastChunkSize = lastchunksize;
 }
 
 uint32_t

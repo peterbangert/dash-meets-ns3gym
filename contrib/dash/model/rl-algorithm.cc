@@ -33,7 +33,7 @@ RLAlgorithm::RLAlgorithm(const videoData &videoData,
     NS_LOG_INFO(this);
     NS_LOG_INFO("Connecting to AI Proxy");
     uint32_t openGymPort = 5555;
-
+    m_repindex = 0;
     NS_LOG_UNCOND("Ns3Env parameters:");
     NS_LOG_UNCOND("--port: " << openGymPort);
 
@@ -71,15 +71,25 @@ RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
 
     if (segmentCounter > 1)
     {
-        myGymEnv->UpdateState(segmentCounter, m_bufferData.bufferLevelOld.back () );
+        myGymEnv->UpdateState(segmentCounter, 
+          m_bufferData.bufferLevelOld.back (),
+          m_throughput.transmissionEnd.back (),
+          m_throughput.transmissionRequested.back (),
+          m_videoData.segmentSize[m_repindex][segmentCounter-1]
+            );
     } else {
-        myGymEnv->UpdateState(segmentCounter, m_bufferData.bufferLevelNew.back () );
+        myGymEnv->UpdateState(segmentCounter, 
+          m_bufferData.bufferLevelNew.back (),
+          m_throughput.transmissionEnd.back (),
+          m_throughput.transmissionRequested.back (),
+          m_videoData.segmentSize[m_repindex][segmentCounter-1]
+          );
     }
 
     
 
-    uint32_t repindex =  myGymEnv->GetRepIndex();
-    answer.nextRepIndex = repindex;
+    m_repindex =  myGymEnv->GetRepIndex();
+    answer.nextRepIndex = m_repindex;
         
     return answer;
 

@@ -50,7 +50,11 @@ public:
   void ClearObs();
   uint32_t GetRepIndex();
   void PrintState();
-  void UpdateState(int64_t segmentCounter,int64_t bufferNow);
+  void UpdateState(int64_t segmentCounter,
+    int64_t bufferNow,
+    int64_t lastchunkfinishtime, 
+    int64_t lastchunkstarttime, 
+    int64_t m_lastchunksize);
   
 
 private:
@@ -66,6 +70,9 @@ private:
   int64_t m_segmentCounter;
 
   int64_t m_reward;  
+  int64_t m_lastChunkFinishTime;
+  int64_t m_lastChunkStartTime;
+  int64_t m_lastChunkSize;
   
 };
 
