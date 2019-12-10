@@ -187,11 +187,11 @@ MyGymEnv::GetObservation()
   Ptr<OpenGymDiscreteContainer> lastChunkStartTime = CreateObject<OpenGymDiscreteContainer> ();
   Ptr<OpenGymDiscreteContainer> RebufferTime = CreateObject<OpenGymDiscreteContainer> ();
   Ptr<OpenGymDiscreteContainer> lastChunkSize = CreateObject<OpenGymDiscreteContainer> ();
-  buffer->SetValue(m_bufferNow / 1000000);
+  buffer->SetValue(m_bufferNow );
   lastRequest->SetValue(m_segmentCounter);
   lastQuality->SetValue(m_new_rep_index);
-  lastChunkFinishTime->SetValue(m_lastChunkFinishTime / 1000000);
-  lastChunkStartTime->SetValue(m_lastChunkStartTime /1000000);
+  lastChunkFinishTime->SetValue(m_lastChunkFinishTime );
+  lastChunkStartTime->SetValue(m_lastChunkStartTime );
   RebufferTime->SetValue(rebuffertime);
   lastChunkSize->SetValue(m_lastChunkSize);
 

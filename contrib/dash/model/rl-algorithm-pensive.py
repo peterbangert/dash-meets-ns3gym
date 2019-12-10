@@ -31,9 +31,6 @@ print("Action space: ", ac_space, ac_space.dtype)
 
 stepIdx = 0
 currIt = 0
-
-probabilities = np.ones(ac_space.n)
-
 actionHistory = []
 
 
@@ -67,7 +64,7 @@ try:
                 params = json.dumps(body)
             else:
                 params = json.dumps(obs)
-            
+
             conn.request("POST", "", params, headers)
             response = conn.getresponse()
             print(response.status, response.reason)
@@ -78,12 +75,19 @@ try:
 
             
             print("---action: ", action)
-
             print("Step: ", stepIdx)
             obs, reward, done, info = env.step(action)
 
-            probabilities[action] += reward
+            
+
             print("---obs, reward, done, info: ", obs, reward, done, info)
+
+            # Convert nano seconds to seconds
+            obs["lastChunkFinishTime"] = float(obs["lastChunkFinishTime"]) / 1000000
+            obs["lastChunkStartTime"] = float(obs["lastChunkStartTime"]) / 1000000
+            obs["buffer"] = float(obs["buffer"]) / 1000000
+            obs["lastChunkSize"] = float(obs["lastChunkSize"]) / 1000000
+
 
             if done:
                 stepIdx = 0
