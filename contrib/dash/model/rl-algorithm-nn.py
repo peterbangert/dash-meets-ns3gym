@@ -18,7 +18,8 @@ A_DIM = 6
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 BITRATE_REWARD_MAP = {0: 0, 300: 1, 750: 2, 1200: 3, 1850: 12, 2850: 15, 4300: 20}
-M_IN_K = 1000.0
+#M_IN_K = 1000.0
+M_IN_K = 1000000.0
 BUFFER_NORM_FACTOR = 10.0
 CHUNK_TIL_VIDEO_END_CAP = 221.0
 TOTAL_VIDEO_CHUNKS = 221
@@ -50,7 +51,7 @@ def get_chunk_size(quality, index):
 
 
 startSim = 0
-iterationNum = 4
+iterationNum = 25
 
 port = 5555
 simTime = 20 # seconds
@@ -73,7 +74,7 @@ print("Action space: ", ac_space, ac_space.dtype)
 
 model = keras.Sequential()
 #model.add(keras.layers.Dense(5, input_shape=(5,), activation='relu'))   # 5 criteria
-model.add(keras.layers.Dense(5, activation='relu'))   # 5 criteria
+model.add(keras.layers.Dense(6, activation='relu'))   # 5 criteria
 model.add(keras.layers.Dense(6, activation='softmax'))                  # 6 qualities 
 model.compile(optimizer=tf.train.AdamOptimizer(0.001),
               loss='categorical_crossentropy',
@@ -88,10 +89,25 @@ totalRebuf = 0
 
 actionHistory = []
 
+
+def get_state_array(obs):
+
+    download_time = float(obs['lastChunkFinishTime']) - float(obs['lastChunkStartTime']) / M_IN_K
+    size = float(obs['lastChunkSize']) / M_IN_K
+    throughput = size / download_time
+    buff = obs['buffer'] / M_IN_K
+    left_chunks =  TOTAL_VIDEO_CHUNKS - obs['lastRequest']
+    rebuffer_time = obs['RebufferTime'] / M_IN_K
+
+    next_state = np.asarray([download_time, size, throughput, buff, left_chunks, rebuffer_time])
+    next_state = np.reshape(next_state, [1, 6])
+    return next_state
+
+
 try:
     while True:
         print("Start iteration: ", currIt)
-        state = env.reset()
+        state = get_state_array(env.reset())
 
         while True:
             stepIdx += 1
@@ -101,7 +117,6 @@ try:
             else:
                 action = np.argmax(model.predict(state)[0])
 
-            action = env.action_space.sample()
             actionHistory.append(action)
 
             
@@ -117,40 +132,29 @@ try:
                     env.reset()
                 break
 
-
-            rebuffer_time = float(obs['RebufferTime'] -totalRebuf)
-            totalRebuf = obs['RebufferTime']
-
-            download_time = float(obs['lastChunkFinishTime']) - float(obs['lastChunkStartTime']) / M_IN_K
-            size = float(obs['lastChunkSize']) / M_IN_K
-            throughput = size / download_time
-            buff = obs['buffer']
-            left_chunks =  TOTAL_VIDEO_CHUNKS - obs['lastRequest']
-
             reward = VIDEO_BIT_RATE[obs['lastquality']] / M_IN_K \
                 - REBUF_PENALTY * obs['RebufferTime'] / M_IN_K \
                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[obs['lastquality']] -
-                                      size) / M_IN_K
+                                      float(obs['lastChunkSize']) ) / M_IN_K
 
-
-
-
-            next_state = np.asarray([download_time, size, throughput, buff, left_chunks])
-
-            #next_state = np.reshape(next_state, [1, 5])
-
+            next_state = get_state_array(obs)
+            print(next_state)
 
                    # Train
             target = reward
             if not done:
-                target = (reward + 0.95 * np.amax(model.predict(next_state)[0]))
+
+                p = model.predict(next_state)
+                print(p)
+
+                target = (reward + 0.95 * np.amax(p))
 
             target_f = model.predict(state)
             target_f[0][action] = target
             model.fit(state, target_f, epochs=1, verbose=0)
 
             state = next_state
-            rewardsum += reward
+            
             if epsilon > epsilon_min: epsilon *= epsilon_decay
 
         currIt += 1

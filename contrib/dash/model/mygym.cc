@@ -47,6 +47,7 @@ MyGymEnv::MyGymEnv ()
   m_lastChunkFinishTime = 0;
   m_lastChunkStartTime = 0;
   m_lastChunkSize =0;
+  m_rebufferTime = 0;
 
   
 }
@@ -64,7 +65,7 @@ MyGymEnv::MyGymEnv (int64_t highestRepIndex, int64_t lastSegmentIndex)
   m_bufferLast =0;
   m_lastChunkFinishTime = 0;
   m_lastChunkStartTime = 0;
-
+  m_rebufferTime = 0;
   
 }
 
@@ -151,11 +152,11 @@ MyGymEnv::GetGameOver()
   NS_LOG_FUNCTION (this);
   
   bool isGameOver = false;
-  if (m_segmentCounter == m_lastSegmentIndex -1 || m_bufferNow ==0) {
+  if (m_segmentCounter == m_lastSegmentIndex -1 ){ //|| m_bufferNow ==0) {
       //m_reward = 0;
       NS_LOG_UNCOND ("seg counter: " << m_segmentCounter);
       NS_LOG_UNCOND ("last seg: " << m_lastSegmentIndex);
-      NS_LOG_UNCOND ("buffer underrun: " << m_bufferNow);
+      //NS_LOG_UNCOND ("buffer underrun: " << m_bufferNow);
       isGameOver = true;
   }
   NS_LOG_UNCOND ("GetGameOver: " << isGameOver);
@@ -176,7 +177,7 @@ MyGymEnv::GetObservation()
 
   box->AddValue(m_bufferNow - m_bufferLast);
   **/
-  int64_t rebuffertime = 0;
+  
 
   NS_LOG_UNCOND ("REP INDEX: " << m_new_rep_index);
 
@@ -192,7 +193,7 @@ MyGymEnv::GetObservation()
   lastQuality->SetValue(m_new_rep_index);
   lastChunkFinishTime->SetValue(m_lastChunkFinishTime );
   lastChunkStartTime->SetValue(m_lastChunkStartTime );
-  RebufferTime->SetValue(rebuffertime);
+  RebufferTime->SetValue(m_rebufferTime);
   lastChunkSize->SetValue(m_lastChunkSize);
 
   Ptr<OpenGymDictContainer> space = CreateObject<OpenGymDictContainer> ();
@@ -276,7 +277,8 @@ MyGymEnv::UpdateState(int64_t segmentCounter,
   int64_t bufferNow, 
   int64_t lastchunkfinishtime, 
   int64_t lastchunkstarttime, 
-  int64_t lastchunksize)
+  int64_t lastchunksize,
+  int64_t rebuffertime)
 {
   m_lastChunkFinishTime = lastchunkfinishtime;
   m_lastChunkStartTime = lastchunkstarttime;
@@ -284,6 +286,7 @@ MyGymEnv::UpdateState(int64_t segmentCounter,
   m_bufferLast = m_bufferNow;
   m_bufferNow = bufferNow;
   m_lastChunkSize = lastchunksize;
+  m_rebufferTime = rebuffertime;
 }
 
 uint32_t

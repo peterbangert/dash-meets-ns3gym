@@ -54,7 +54,8 @@ public:
     int64_t bufferNow,
     int64_t lastchunkfinishtime, 
     int64_t lastchunkstarttime, 
-    int64_t m_lastchunksize);
+    int64_t m_lastchunksize,
+    int64_t rebuffertime);
   
 
 private:
@@ -73,6 +74,8 @@ private:
   int64_t m_lastChunkFinishTime;
   int64_t m_lastChunkStartTime;
   int64_t m_lastChunkSize;
+  int64_t m_rebufferTime;
+
   
 };
 

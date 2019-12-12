@@ -67,23 +67,22 @@ RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
       answer.nextRepIndex = 0;
       answer.decisionCase = 0;
       return answer;
-    }
-
-    if (segmentCounter > 1)
-    {
-        myGymEnv->UpdateState(segmentCounter, 
-          m_bufferData.bufferLevelOld.back (),
-          m_throughput.transmissionEnd.back (),
-          m_throughput.transmissionRequested.back (),
-          m_videoData.segmentSize[m_repindex][segmentCounter-1]
-            );
     } else {
-        myGymEnv->UpdateState(segmentCounter, 
-          m_bufferData.bufferLevelNew.back (),
-          m_throughput.transmissionEnd.back (),
-          m_throughput.transmissionRequested.back (),
-          m_videoData.segmentSize[m_repindex][segmentCounter-1]
-          );
+      int64_t bufferNow = m_bufferData.bufferLevelNew.back () - (timeNow - m_throughput.transmissionEnd.back ());
+      int64_t rebufferTime = 0;
+      if (bufferNow  == 0){
+        rebufferTime = timeNow - ( m_playbackData.playbackStart.back() + 2000000 );
+      }
+
+      myGymEnv->UpdateState(segmentCounter, 
+        bufferNow,
+        m_throughput.transmissionEnd.back (),
+        m_throughput.transmissionRequested.back (),
+        m_videoData.segmentSize[m_repindex][segmentCounter-1],
+        rebufferTime
+        );
+
+
     }
 
     

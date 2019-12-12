@@ -87,6 +87,7 @@ try:
             obs["lastChunkStartTime"] = float(obs["lastChunkStartTime"]) / 1000000
             obs["buffer"] = float(obs["buffer"]) / 1000000
             obs["lastChunkSize"] = float(obs["lastChunkSize"]) / 1000000
+            obs["RebufferTime"] = float(obs["RebufferTime"]) / 1000000
 
 
             if done:
