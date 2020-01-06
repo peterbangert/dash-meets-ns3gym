@@ -1,82 +1,39 @@
 # DASH meets ns3-gym
 
-> Combining DASH the discrete video streaming framework with ns3gym, the ns3 api toolkit for developing ML based algorithms.
+> Combine discrete video streaming with a framework for Machine Learning.
 
 
-## Installation 
 
-1. Follow guide to setting up ns3
-
-   - [tutorial](https://www.nsnam.org/docs/release/3.30/tutorial/singlehtml/index.html)
-
-2. Follow section below for setting up ns3-gym 
-  
-   - [ns3-gym setup](#ns3-gym)
-
-3. Follow section below for setting up DASH in ns3
-
-   - [dash setup](#dash-ns3)
-
-4. Program Execution
-
-   - [command](#program-execution)
-
-## ns3-gym
+![](logo.png)
 
 
-> [OpenAI Gym](https://gym.openai.com/) is a toolkit for reinforcement learning (RL) widely used in research. The network simulator [ns–3](https://www.nsnam.org/) is the de-facto standard for academic and industry studies in the areas of networking protocols and communication technologies. ns3-gym is a framework that integrates both OpenAI Gym and ns-3 in order to encourage usage of RL in networking research.
-
- - Reference : https://github.com/tkn-tub/ns3-gym
 
 ### Installation
 
 
-1. Install all required dependencies required by ns-3.
-```
-# minimal requirements for C++:
-apt-get install gcc g++ python
+1. Install/setup [ns-3](https://www.nsnam.org/wiki/Installation) ( >= version 3.27)
 
-see https://www.nsnam.org/wiki/Installation
-```
-2. Install ZMQ and Protocol Buffers libs:
-```
-# to install protobuf-3.6 on ubuntu 16.04:
-sudo add-apt-repository ppa:maarten-fonville/protobuf
-sudo apt-get update
+2. Install/setup [ns3-gym](https://github.com/tkn-tub/ns3-gym) 
 
-apt-get install libzmq5 libzmq5-dev
-apt-get install libprotobuf-dev
-apt-get install protobuf-compiler
-```
-3. Configure and build ns-3 project (if you are going to use Python virtual environment, please execute these commands inside it):
-```
-# Opengym Protocol Buffer messages (C++ and Python) are build during configure
-./waf configure
-./waf build
-```
-
-4. Install ns3gym located in src/opengym/model/ns3gym (Python3 required)
-```
-pip3 install ./src/opengym/model/ns3gym
-```
+3. Clone this repo into `contrib/` folder
 
 
 
-## DASH-ns3
+## Description
 
-> A simulation model for HTTP-based adaptive streaming applications. 
+This project combines two projects into one extensible, approachable plugin. DASH ns3 is a simulation model for HTTP-based adaptive streaming applications, and ns3-gym is a framework that integrates both OpenAI Gym and ns-3 in order to encourage usage of RL in networking research.
 
- - Reference : https://github.com/haraldott/dash
-
-DASH ns3 is already setup to run out of the box in this repository, for information on how DASH is setup and how to develop with DASH, please see the referenced repository above.
-
-
-## Dash meets ns3gym Interface
-
-
+DASH meets ns3gym will allow users to research and develope competetive HAS (http based adaptive streaming) algorithms in a discrete, controlled, scalable way. 
 
 
 ## Program Execution
+
+#### Example
+
+```bash
+./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+```
+
 
 ### Parameters 
 - simulationId 
@@ -92,14 +49,19 @@ DASH ns3 is already setup to run out of the box in this repository, for informat
  1627 46529  
  1987 121606  
 
-#### Example
+## Examples
 
-```bash
-./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
-```
+### Pensive 
+
+> MIT CSAIL Labratories, [link](http://web.mit.edu/pensieve/)
+
+The fully functioning, pretrained Actor/Critic Neural Network developed by the MIT CSAIL Labratories is implemented.
 
 
 
+## Reference 
+
+- "Simulation Framework for HTTP-Based Adaptive Streaming Applications" by Harald Ott, Konstantin Miller, and Adam Wolisz, 2017
 
 
 ## Contact
