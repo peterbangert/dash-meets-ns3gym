@@ -1,7 +1,7 @@
 ## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
 def build(bld):
-    module = bld.create_ns3_module('dash', ['internet','config-store','stats'])
+    module = bld.create_ns3_module('dash-meets-ns3gym', ['internet','config-store','stats'])
     module.includes = '.'
     module.source = [
         'model/tcp-stream-client.cc',
@@ -16,7 +16,7 @@ def build(bld):
         ]
 
     headers = bld(features='ns3header')
-    headers.module = 'dash'
+    headers.module = 'dash-meets-ns3gym'
     headers.source = [
         'model/tcp-stream-client.h',
         'model/tcp-stream-server.h',

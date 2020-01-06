@@ -154,6 +154,17 @@ main (int argc, char *argv[])
   uint16_t port = 9;
 
 
+  // create folder for logs
+  const char * mylogsDir = dashLogDirectory.c_str();
+  mkdir (mylogsDir, 0775);
+  std::string algodirstr (dashLogDirectory +  adaptationAlgo );  
+  const char * algodir = algodirstr.c_str();
+  mkdir (algodir, 0775);
+  std::string dirstr (dashLogDirectory + adaptationAlgo + "/" + ToString (numberOfClients) + "/");
+  const char * dir = dirstr.c_str();
+  mkdir(dir, 0775);
+
+
 
   /* Install TCP Receiver on the access point */
   TcpStreamServerHelper serverHelper (port);

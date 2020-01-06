@@ -39,6 +39,8 @@
 #include "ns3/tcp-stream-interface.h"
 
 
+
+
 template <typename T>
 std::string ToString(T val)
 {
@@ -235,17 +237,22 @@ main (int argc, char *argv[])
 
   // create folder so we can log the positions of the clients
   const char * mylogsDir = dashLogDirectory.c_str();
-  mkdir (mylogsDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  const char * tobascoDir = (dashLogDirectory + adaptationAlgo).c_str ();
-  mkdir (tobascoDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  const char * dir = (dashLogDirectory + adaptationAlgo + "/" + ToString (numberOfClients) + "/").c_str();
-  mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  mkdir (mylogsDir, 0775);
+  std::string algodirstr (dashLogDirectory +  adaptationAlgo );  
+  const char * algodir = algodirstr.c_str();
+  mkdir (algodir, 0775);
+  std::string dirstr (dashLogDirectory + adaptationAlgo + "/" + ToString (numberOfClients) + "/");
+  const char * dir = dirstr.c_str();
+  mkdir(dir, 0775);
 
   std::ofstream clientPosLog;
-  std::string clientPos = dashLogDirectory + "/" + adaptationAlgo + "/" + ToString (numberOfClients) + "/" + "sim" + ToString (simulationId) + "_"  + "clientPos.txt";
+  std::string clientPos = dashLogDirectory +  adaptationAlgo + "/" + ToString (numberOfClients) + "/" + "sim" + ToString (simulationId) + "_"  + "clientPos.txt";
+  //std::string dLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "downloadLog.txt";
+
   clientPosLog.open (clientPos.c_str());
   NS_ASSERT_MSG (clientPosLog.is_open(), "Couldn't open clientPosLog file");
 
+  
   // allocate clients to positions
   for (uint i = 0; i < numberOfClients; i++)
     {
