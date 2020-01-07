@@ -31,7 +31,7 @@ DASH meets ns3gym will allow users to research and develope competetive HAS (htt
 #### Example
 
 ```bash
-./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash/segmentSizes.txt"
+./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash-meets-ns3gym/segmentSizes.txt"
 ```
 
 

@@ -4,7 +4,7 @@
 #include "tcp-stream-adaptation-algorithm.h"
 #include "ns3/opengym-module.h"
 #include "ns3/core-module.h"
-#include "mygym.h"
+#include "ns3gym/mygym.h"
 
 
 namespace ns3 {

@@ -11,7 +11,7 @@ def build(bld):
         'model/panda.cc',
         'model/tobasco2.cc',
         'model/rl-algorithm.cc',
-        'model/mygym.cc',
+        'ns3gym/mygym.cc',
         'helper/tcp-stream-helper.cc',
         ]
 
@@ -26,7 +26,7 @@ def build(bld):
         'model/panda.h',
         'model/tobasco2.h',
         'model/rl-algorithm.h',
-        'model/mygym.h',
+        'ns3gym/mygym.h',
         'helper/tcp-stream-helper.h',
         ]
 
