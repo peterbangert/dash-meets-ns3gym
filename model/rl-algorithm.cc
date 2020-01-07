@@ -37,15 +37,10 @@ RLAlgorithm::RLAlgorithm(const videoData &videoData,
     NS_LOG_UNCOND("Ns3Env parameters:");
     NS_LOG_UNCOND("--port: " << openGymPort);
 
-    
-    
-
     openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
     myGymEnv = CreateObject<MyGymEnv> (m_highestRepIndex, m_lastSegmentIndex);
     myGymEnv->SetOpenGymInterface(openGymInterface);
     
-
-
 }
 
 algorithmReply
@@ -81,12 +76,7 @@ RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
         m_videoData.segmentSize[m_repindex][segmentCounter-1],
         rebufferTime
         );
-
-
     }
-
-    
-
     m_repindex =  myGymEnv->GetRepIndex();
     answer.nextRepIndex = m_repindex;
         

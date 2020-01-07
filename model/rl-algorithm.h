@@ -35,7 +35,6 @@ private:
     const int64_t m_lastSegmentIndex;
     int64_t m_repindex;
 
-  
 };
 
 

@@ -37,7 +37,7 @@ NS_OBJECT_ENSURE_REGISTERED (MyGymEnv);
 MyGymEnv::MyGymEnv ()
 {
   NS_LOG_FUNCTION (this);
-  
+
   m_new_rep_index =0;
   m_old_rep_index =0;
   m_highestRepIndex = 8;
@@ -49,7 +49,6 @@ MyGymEnv::MyGymEnv ()
   m_lastChunkSize =0;
   m_rebufferTime = 0;
 
-  
 }
 
 
@@ -153,10 +152,8 @@ MyGymEnv::GetGameOver()
   
   bool isGameOver = false;
   if (m_segmentCounter == m_lastSegmentIndex -1 ){ //|| m_bufferNow ==0) {
-      //m_reward = 0;
       NS_LOG_UNCOND ("seg counter: " << m_segmentCounter);
       NS_LOG_UNCOND ("last seg: " << m_lastSegmentIndex);
-      //NS_LOG_UNCOND ("buffer underrun: " << m_bufferNow);
       isGameOver = true;
   }
   NS_LOG_UNCOND ("GetGameOver: " << isGameOver);
@@ -170,17 +167,7 @@ Ptr<OpenGymDataContainer>
 MyGymEnv::GetObservation()
 {
   NS_LOG_FUNCTION (this);
-  /**
-  uint32_t numdata = 1;
-  std::vector<uint32_t> shape = {numdata,};
-  Ptr<OpenGymBoxContainer<uint32_t> > box = CreateObject<OpenGymBoxContainer<uint32_t> >(shape);
-
-  box->AddValue(m_bufferNow - m_bufferLast);
-  **/
   
-
-  NS_LOG_UNCOND ("REP INDEX: " << m_new_rep_index);
-
   Ptr<OpenGymDiscreteContainer> buffer = CreateObject<OpenGymDiscreteContainer> ( );
   Ptr<OpenGymDiscreteContainer> lastRequest = CreateObject<OpenGymDiscreteContainer> ();
   Ptr<OpenGymDiscreteContainer> lastQuality = CreateObject<OpenGymDiscreteContainer> ();
@@ -205,7 +192,6 @@ MyGymEnv::GetObservation()
   space->Add("RebufferTime", RebufferTime);
   space->Add("lastChunkSize", lastChunkSize);
 
-  NS_LOG_UNCOND ("GetObservation: " << space);
   return space;
 }
 
@@ -223,8 +209,6 @@ MyGymEnv::GetReward()
   } else {
     m_reward = 0;
   }
-
-  NS_LOG_UNCOND ("-------------------------reward: " << m_reward);
   return m_reward;
 }
 
@@ -236,8 +220,6 @@ MyGymEnv::GetExtraInfo()
 {
   NS_LOG_FUNCTION (this);
   std::string myInfo = "no extra info";
-  
-  NS_LOG_UNCOND("GetExtraInfo: " << myInfo);
   return myInfo;
 }
 
@@ -253,8 +235,6 @@ MyGymEnv::ExecuteActions(Ptr<OpenGymDataContainer> action)
   Ptr<OpenGymDiscreteContainer> discrete = DynamicCast<OpenGymDiscreteContainer>(action);
   m_new_rep_index = discrete->GetValue();
   
-  PrintState();
-
   return true;
 }
 
@@ -262,14 +242,12 @@ void
 MyGymEnv::PrintState()
 {
   NS_LOG_UNCOND ("Rep old: " << m_old_rep_index << " --  Rep new : " << m_new_rep_index);
-  //NS_LOG_UNCOND ("State new : " << m_new_rep_index);
 }
   
 void
 MyGymEnv::ClearObs()
 {
   NS_LOG_FUNCTION (this);
-  
 }
 
 void
