@@ -57,6 +57,57 @@ DASH meets ns3gym will allow users to research and develope competetive HAS (htt
 
 The fully functioning, pretrained Actor/Critic Neural Network developed by the MIT CSAIL Labratories is implemented.
 
+#### How to Run
+
+1. Run ns3 simulation above `./waf --run=...`
+
+2. Run pensive in seperate terminal
+
+`$ cd /ns3gym/pensive`
+`$ python pensive.py`
+
+
+### Simple NN 
+
+This NN exhibits reinforcement learning applied to this problem in limited scope, no learning occurs in context of entire simulation, just state in every iteration.
+
+#### How to Run
+
+1. Run ns3 simulation above `./waf --run=...`
+
+2. Run simple NN in seperate terminal
+
+`$ cd /ns3gym/simple-nn`
+`$ python simple-nn.py [--args x]`
+
+- Command line arguments are as follows
+
+	- episodes, int: Number of simulations to train/test, default 1
+	- segmentSizeFile, str: Filepath of segment sizes, default is segmentSizeFile
+	- saveModel, str: filename of trained model to save, default is no save.
+	- useModel. str:  filename of trained model to use, default is no model.
+
+## Technical Overview
+
+Using ns3gym, an ns3 discrete network simulation may be extended to use python ai learning tools, such as openAI gym. 
+
+Ns3gym uses zmq tcp socket connection to create a gateway and agent entity, the gateway (built into ns3) will send the current state of the simulation at every discrete iteration  to the agent (seperate python script).
+
+Dash-meets-ns3gym is a framework where all simulations and data endpoints are constructed to represent video information being streamed in a HTTP like environment.
+
+Using this project will allow you to create RL algorithms to learn better HAS algorthms
+
+### Observation Space
+
+The gateway sends observations every iteration to the agent to process. The observation space represents video data during streaming and is defined as follows
+
+  - buffer : Current amount of video in client buffer (ns)
+  - lastRequest: Current index in total video
+  - lastquality: Last requested video quality
+  - lastChunkFinishTime: Time (ns) when last download completed
+  - lastChunkStartTime: Time (ns) when last download started
+  - RebufferTime: Time spent (ns) with no data in buffer
+  - lastChunkSize: 
 
 
 ## Reference 
