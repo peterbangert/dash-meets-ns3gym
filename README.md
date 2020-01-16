@@ -4,7 +4,7 @@
 
 
 
-![](logo.png)
+![](img/logo.png)
 
 
 
@@ -28,27 +28,29 @@ DASH meets ns3gym will allow users to research and develope competetive HAS (htt
 
 ## Program Execution
 
-#### Example
+### 1. DASH Simulation
+
+From the base directory of ns3 framework, run:
 
 ```bash
 ./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash-meets-ns3gym/segmentSizes.txt"
 ```
-Other simutlations
+Other simutlations, replace `tcp-stream`
 
-1. tcp-stream-ethernet
+1. `tcp-stream-ethernet`
   - Run the simulation on direct ethernet connection to server
 
-2. tcp-stream-bitrate
+2. `tcp-stream-bitrate`
   - Run simultation with user defined server connection bitrate
   - Add arguments `--bitRate=<int>~`
   - default: `100000` (kb/s)
 
-3. tcp-stream-interrupts
-  - Run simulation with random requests from other clients 
+3. `tcp-stream-interrupts`
+  - Run simulation with random requests from N other clients 
   - Add arguments `--interrupts=<int>` 
 
 
-### Parameters 
+#### Parameters 
 - simulationId 
 - numberOfClients
 - segmentDuration
@@ -62,9 +64,16 @@ Other simutlations
  1627 46529  
  1987 121606  
 
-## Examples
+### 2. RL Agent
+
+In another Terminal, run one of the following examples, or implement your own.
+
+>  sim1: simple NN, sim2: pensive 
+
+![](img/compare.jpg)
 
 ### Pensive 
+
 
 > MIT CSAIL Labratories, [link](http://web.mit.edu/pensieve/)
 
@@ -79,8 +88,11 @@ The fully functioning, pretrained Actor/Critic Neural Network developed by the M
 `$ cd /ns3gym/pensive`
 `$ python pensive.py`
 
+3. Optional, create simulation video (only linux)
+  - Add arg `--animate=<video_filename>`
 
-### Simple NN 
+
+### Simple-NN 
 
 This NN exhibits reinforcement learning applied to this problem in limited scope, no learning occurs in context of entire simulation, just state in every iteration.
 
@@ -90,15 +102,18 @@ This NN exhibits reinforcement learning applied to this problem in limited scope
 
 2. Run simple NN in seperate terminal
 
-`$ cd /ns3gym/simple-nn`
-`$ python simple-nn.py [--args x]`
+- `$ cd /ns3gym/simple-nn`
+- `$ python simple-nn.py [--args x]`
 
-- Command line arguments are as follows
+#### Command line arguments are as follows
 
-	- episodes, int: Number of simulations to train/test, default 1
-	- segmentSizeFile, str: Filepath of segment sizes, default is segmentSizeFile
-	- saveModel, str: filename of trained model to save, default is no save.
-	- useModel. str:  filename of trained model to use, default is no model.
+- `-h` : print help
+- `--episodes=<int>`: Number of simulations to train/test, default 1
+- `--segmentSizeFile=<filename>`: Filepath of segment sizes, default is segmentSizeFile
+- `--saveModel=<filename>`: filename of trained model to save, default is no save.
+- `--useModel=<filename>`:  filename of trained model to use, default is no model.
+- `--reward=<reward>`: Choose reward function, [rebuff, quality, hd, log, default]
+- `--animate=<video_filename>`: create simulation video
 
 ## Technical Overview
 
@@ -120,7 +135,7 @@ The gateway sends observations every iteration to the agent to process. The obse
   - lastChunkFinishTime: Time (ns) when last download completed
   - lastChunkStartTime: Time (ns) when last download started
   - RebufferTime: Time spent (ns) with no data in buffer
-  - lastChunkSize: 
+  - lastChunkSize: in bytes
 
 
 ## Reference 
