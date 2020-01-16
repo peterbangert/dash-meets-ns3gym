@@ -162,6 +162,7 @@ TcpStreamClient::Controller (controllerEvent event)
           PlaybackHandle ();
           /*  e_pf  */
           state = terminal;
+          NS_LOG_UNCOND("Finished");
           StopApplication ();
         }
       return;
@@ -228,6 +229,7 @@ TcpStreamClient::TcpStreamClient ()
   m_bytesReceived = 0;
   m_segmentsInBuffer = 0;
   m_bufferUnderrun = false;
+  m_bufferUnderrunDuration = 0;
   m_currentPlaybackIndex = 0;
 
 }
@@ -240,7 +242,7 @@ TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
   if (ReadInBitrateValues (ToString (m_segmentSizeFilePath)) == -1)
     {
       NS_LOG_ERROR ("Opening test bitrate file failed. Terminating.\n");
-      Simulator::Stop ();
+      ////Simulator::Stop ();
       Simulator::Destroy ();
     }
   m_lastSegmentIndex = (int64_t) m_videoData.segmentSize.at (0).size () - 1;
@@ -265,7 +267,7 @@ TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
     {
       NS_LOG_ERROR ("Invalid algorithm name entered. Terminating.");
       StopApplication ();
-      Simulator::Stop ();
+      //////Simulator::Stop ();
       Simulator::Destroy ();
     }
 
@@ -417,6 +419,7 @@ TcpStreamClient::PlaybackHandle ()
       m_bufferUnderrun = true;
       bufferUnderrunLog << std::setfill (' ') << std::setw (26) << timeNow / (double)1000000 << " ";
       bufferUnderrunLog.flush ();
+      m_bufferUnderrunDuration = timeNow;
       return true;
     }
   else if (m_segmentsInBuffer > 0)
@@ -426,6 +429,7 @@ TcpStreamClient::PlaybackHandle ()
           m_bufferUnderrun = false;
           bufferUnderrunLog << std::setfill (' ') << std::setw (13) << timeNow / (double)1000000 << "\n";
           bufferUnderrunLog.flush ();
+          m_bufferUnderrunDuration = timeNow - m_bufferUnderrunDuration;
         }
       m_playbackData.playbackStart.push_back (timeNow);
       LogPlayback ();

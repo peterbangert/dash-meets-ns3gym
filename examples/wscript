@@ -5,4 +5,8 @@ def build(bld):
     obj.source = 'tcp-stream.cc'
     obj1 = bld.create_ns3_program('tcp-stream-ethernet', ['dash-meets-ns3gym', 'internet', 'csma', 'buildings', 'applications', 'point-to-point','opengym'])
     obj1.source = 'tcp-stream-ethernet.cc'
+    obj2 = bld.create_ns3_program('tcp-stream-interrupts', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym'])
+    obj2.source = 'tcp-stream-interrupts.cc'
+    obj3 = bld.create_ns3_program('tcp-stream-bitrate', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym'])
+    obj3.source = 'tcp-stream-bitrate.cc'
     

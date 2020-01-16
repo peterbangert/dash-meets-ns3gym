@@ -33,6 +33,19 @@ DASH meets ns3gym will allow users to research and develope competetive HAS (htt
 ```bash
 ./waf --run="tcp-stream --simulationId=1 --numberOfClients=1 --adaptationAlgo=rl-algorithm --segmentDuration=2000000 --segmentSizeFile=contrib/dash-meets-ns3gym/segmentSizes.txt"
 ```
+Other simutlations
+
+1. tcp-stream-ethernet
+  - Run the simulation on direct ethernet connection to server
+
+2. tcp-stream-bitrate
+  - Run simultation with user defined server connection bitrate
+  - Add arguments `--bitRate=<int>~`
+  - default: `100000` (kb/s)
+
+3. tcp-stream-interrupts
+  - Run simulation with random requests from other clients 
+  - Add arguments `--interrupts=<int>` 
 
 
 ### Parameters 

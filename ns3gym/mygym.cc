@@ -124,7 +124,6 @@ MyGymEnv::GetObservationSpace()
   space->Add("RebufferTime", RebufferTime);
   space->Add("lastChunkSize", lastChunkSize);
   
-  NS_LOG_UNCOND ("MyGetObservationSpace: " << space);
   return space;
 }
 
@@ -138,7 +137,6 @@ MyGymEnv::GetActionSpace()
   uint32_t highestRepIndex = m_highestRepIndex;
 
   Ptr<OpenGymDiscreteSpace> space = CreateObject<OpenGymDiscreteSpace> (highestRepIndex);
-  NS_LOG_UNCOND ("GetActionSpace: " << space);
   return space;
 }
 
@@ -155,8 +153,9 @@ MyGymEnv::GetGameOver()
       NS_LOG_UNCOND ("seg counter: " << m_segmentCounter);
       NS_LOG_UNCOND ("last seg: " << m_lastSegmentIndex);
       isGameOver = true;
+      NS_LOG_UNCOND ("GetGameOver: " << isGameOver);
   }
-  NS_LOG_UNCOND ("GetGameOver: " << isGameOver);
+  
   return isGameOver;
 }
 

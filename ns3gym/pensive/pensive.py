@@ -12,6 +12,7 @@ import numpy as np
 import tensorflow as tf
 import time
 import a3c
+import argparse
 
 
 S_INFO = 6  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
@@ -75,8 +76,15 @@ def env_init():
 
 def main():
 
+
+    ep_cumulative_reward = 0
+    ep_start_time = time.time()
+    ep_cumulative_rebuffer = 0 
+
     env = env_init()
+    stepIdx = 0
     actionHistory = []  
+    throughputHistory = []
     ob_space = env.observation_space
     ac_space = env.action_space
     print("Observation space: ", ob_space,  ob_space.dtype)
@@ -135,6 +143,7 @@ def main():
                   's_batch': s_batch, 'a_batch': a_batch, 'r_batch': r_batch}
 
         while True:
+            stepIdx += 1
 
             # Convert nano seconds to seconds
             obs["lastChunkFinishTime"] = float(obs["lastChunkFinishTime"]) / 1000000
@@ -153,6 +162,9 @@ def main():
             input_dict['last_bit_rate'] = VIDEO_BIT_RATE[obs['lastquality']]
             input_dict['last_total_rebuf'] = obs['RebufferTime']
 
+
+            ep_cumulative_reward += reward
+            ep_cumulative_rebuffer += obs['RebufferTime'] 
             # retrieve previous state
             if len(input_dict["s_batch"]) == 0:
                 state = [np.zeros((S_INFO, S_LEN))]
@@ -199,10 +211,37 @@ def main():
                 break
 
             actionHistory.append(action)
+            
             obs, reward, done, info = env.step(action)
-            print("---obs, reward, done, info: ", obs, reward, done, info)
+
+            if args.animate:
+                throughputHistory.append(state[2, -1] * M_IN_K)
+                plt.clf()
+                fig, ax = plt.subplots(2)
+                
+                ax[0].plot(actionHistory)
+                ax[0].set(ylabel="Request Quality (0-8)")
+                ax[0].set_xlim([0,TOTAL_VIDEO_CHUNKS])
+                ax[0].set_ylim([0,A_DIM])
+                
+                ax[1].plot(throughputHistory)
+                ax[1].set(ylabel="Est. Throughput")
+                ax[1].set_xlim([0,TOTAL_VIDEO_CHUNKS])
+                #ax[1].set_ylim([0,M_IN_K*2])
+                
+                plt.xlabel("Segment Index")
+                fig.suptitle("Rep index over Time")
+                fn = str(stepIdx)
+                if len(fn) < len(str(TOTAL_VIDEO_CHUNKS)):
+                    fn = "0" * ( len(str(TOTAL_VIDEO_CHUNKS)) - len(fn)) + fn
+
+                fig.savefig('./animation/' + fn +  '.png')
+                #plt.show()
+                plt.close(fig)
             
 
+    print "Cumulative reward : " , ep_cumulative_reward , " Time : " , time.time() - ep_start_time , " Cumulative rebuffer : " , ep_cumulative_rebuffer
+        
     env.close()
     print(actionHistory)
     plt.plot(actionHistory)
@@ -210,11 +249,24 @@ def main():
     plt.show()
 
 
+def get_args():
+    parser = argparse.ArgumentParser(description='Arguments for Neural Network')
+    parser.add_argument('--animate', type=str, default=None,
+                       help='Create mp4 animation of result, give filename, default none')
+    return parser.parse_args()
+
+def create_animation(args):
+    os.chdir("animation")
+    os.system("ffmpeg -framerate 8 -pattern_type glob -i '*.png' -c:v libx264 -r 30 -pix_fmt yuv420p " + args.animate +".mp4")
+    os.system('find . -name "*.png" -type f -delete')
 
 
 if __name__ == "__main__":
     try:
+        args = get_args()
         main()
+        if args.animate:
+            create_animation(args)
     except (KeyboardInterrupt, SystemExit):
         print("Ctrl-C -> Exit")
     finally:

@@ -266,6 +266,7 @@ private:
   std::string m_segmentSizeFilePath; //!< The relative path (from ns-3.x directory) to the file containing the segment sizes in bytes
   std::string m_algoName;//!< Name of the apation algorithm's class which this client will use for the simulation
   bool m_bufferUnderrun; //!< True if there is currently a buffer underrun in the simulated playback
+  int64_t m_bufferUnderrunDuration;
   int64_t m_currentPlaybackIndex; //!< The index of the segment that is currently being played
   int64_t m_segmentsInBuffer; //!< The number of segments that are currently in the buffer
   int64_t m_currentRepIndex; //!< The index of the currently requested segment quality

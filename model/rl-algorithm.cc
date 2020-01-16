@@ -34,8 +34,6 @@ RLAlgorithm::RLAlgorithm(const videoData &videoData,
     NS_LOG_INFO("Connecting to AI Proxy");
     uint32_t openGymPort = 5555;
     m_repindex = 0;
-    NS_LOG_UNCOND("Ns3Env parameters:");
-    NS_LOG_UNCOND("--port: " << openGymPort);
 
     openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
     myGymEnv = CreateObject<MyGymEnv> (m_highestRepIndex, m_lastSegmentIndex);
@@ -46,8 +44,6 @@ RLAlgorithm::RLAlgorithm(const videoData &videoData,
 algorithmReply
 RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
     const int64_t timeNow = Simulator::Now().GetMicroSeconds();
-    
-    NS_LOG_UNCOND("--------------  Time : " << timeNow <<"  Segment Count: " << segmentCounter );
 
     // Default Response
     algorithmReply answer;
@@ -65,8 +61,8 @@ RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
     } else {
       int64_t bufferNow = m_bufferData.bufferLevelNew.back () - (timeNow - m_throughput.transmissionEnd.back ());
       int64_t rebufferTime = 0;
-      if (bufferNow  == 0){
-        rebufferTime = timeNow - ( m_playbackData.playbackStart.back() + 2000000 );
+      if (m_bufferData.bufferLevelOld.back() == 0  && segmentCounter >= 2){
+        rebufferTime = timeNow - ( m_playbackData.playbackStart.at (segmentCounter -2   ) + 2000000 );
       }
 
       myGymEnv->UpdateState(segmentCounter, 
@@ -81,6 +77,5 @@ RLAlgorithm::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
     answer.nextRepIndex = m_repindex;
         
     return answer;
-
 }
 } // namespace ns3
