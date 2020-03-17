@@ -50,7 +50,7 @@ def get_reward(args, obs):
     if args.reward == "quality":
         
         ## option 1. reward for just quality
-        reward = post_data['lastquality']
+        reward = obs['lastquality']
         
     elif args.reward == "rebuff" : 
         
@@ -72,38 +72,39 @@ def get_reward(args, obs):
                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[obs['lastquality']] -
                                       float(obs['lastChunkSize']) ) / M_IN_K
 
+
     elif args.reward == "log" :
         # --log reward--
         log_bit_rate = np.log(VIDEO_BIT_RATE[obs['lastquality']] / float(VIDEO_BIT_RATE[0]))   
         log_last_bit_rate = np.log(obs['last_bit_rate'] / float(VIDEO_BIT_RATE[0]))
 
         reward = log_bit_rate \
-                  - 4.3 * rebuffer_time / M_IN_K \
+                  - 4.3 * obs['RebufferTime'] / M_IN_K \
                   - SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate)
                   
     elif args.reward == "hd" :
     # --hd reward--
         reward = BITRATE_REWARD[obs['lastquality']] \
-             - 8 * rebuffer_time / M_IN_K - np.abs(BITRATE_REWARD[post_data['lastquality']] - BITRATE_REWARD_MAP[obs['last_bit_rate']])
-
+             - 8 * obs['RebufferTime'] / M_IN_K - np.abs(BITRATE_REWARD[post_data['lastquality']] - BITRATE_REWARD_MAP[obs['last_bit_rate']])
     return reward
 
 def load_model(args):
 
-    model = keras.Sequential()
     
     if (args.useModel is not None):
     
         # load json and create model
-        json_file = open('saved-models/' +args.useModel + '.json', 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        model = keras.models.model_from_json(loaded_model_json)
+        #json_file = open('saved-models/' +args.useModel + '.json', 'r')
+        #loaded_model_json = json_file.read()
+        #json_file.close()
+        #model = keras.models.model_from_json(loaded_model_json)
         # load weights into new model
-        model.load_weights('saved-models/' + args.useModel + ".h5")
+        #model.load_weights('saved-models/' + args.useModel + ".h5")
+        model = keras.models.load_model('saved-models/' + args.useModel +'.h5')
         print("Loaded model from disk")
 
     else:
+        model = keras.Sequential()
         model.add(keras.layers.Dense(S_INFO, activation='relu'))   
         model.add(keras.layers.Dense(A_DIM, activation='softmax'))         
 
@@ -119,11 +120,12 @@ def save_model(args, model):
         # serialize model to JSON
     if (args.saveModel  is not None):
 
-        model_json = model.to_json()
-        with open('saved-models/' +args.saveModel + ".json", "w") as json_file:
-            json_file.write(model_json)
-        # serialize weights to HDF5
-        model.save_weights('saved-models/' +args.saveModel+".h5")
+        #model_json = model.to_json()
+        #with open('saved-models/' +args.saveModel + ".json", "w") as json_file:
+        #    json_file.write(model_json)
+        ## serialize weights to HDF5
+        #model.save_weights('saved-models/' +args.saveModel+".h5")
+        model.save('saved-models/' +args.saveModel+".h5")
         print("Saved model to disk")
          
 
@@ -176,6 +178,7 @@ def main(args):
     epsilon_decay = 0.999
     totalRebuf = 0
     actionHistory = []
+    actionHistoryAnimation = []
     throughputHistory = []
 
     env = env_init()
@@ -229,13 +232,14 @@ def main(args):
             if epsilon > epsilon_min: epsilon *= epsilon_decay
 
 
-            if args.animate:
+            if args.animate and cur_episode +1 == args.episodes :
                 
-                throughputHistory.append(next_state[0][2] * M_IN_K)
+                throughputHistory.append(next_state[0][2] )
+                actionHistoryAnimation.append(action)
                 plt.clf()
                 fig, ax = plt.subplots(2)
                 
-                ax[0].plot(actionHistory)
+                ax[0].plot(actionHistoryAnimation)
                 ax[0].set(ylabel="Request Quality (0-8)")
                 ax[0].set_xlim([0,TOTAL_VIDEO_CHUNKS])
                 ax[0].set_ylim([0,A_DIM])
