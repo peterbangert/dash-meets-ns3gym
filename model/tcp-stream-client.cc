@@ -259,9 +259,9 @@ TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
     {
       algo = new FestiveAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput);
     }
-    else if (algorithm == "rl-algorithm")
+    else if (algorithm == "ns3gym")
     {
-      algo = new RLAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput, m_numberOfClients, m_simulationId);
+      algo = new MyGymEnv (m_videoData, m_playbackData, m_bufferData, m_throughput);
     }
   else
     {

@@ -50,12 +50,10 @@ public:
   void ClearObs();
   uint32_t GetRepIndex();
   void PrintState();
-  void UpdateState(int64_t segmentCounter,
-  int64_t bufferNow,
-  int64_t lastchunkfinishtime, 
-  int64_t lastchunkstarttime, 
-  int64_t m_lastchunksize,
-  int64_t rebuffertime);
+  void UpdateState(const videoData &videoData,
+             const playbackData & playbackData,
+       const bufferData & bufferData,
+       const throughputData & throughput);
 
 
 private:
