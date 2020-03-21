@@ -23,19 +23,14 @@ MyGymEnv::MyGymEnv(const videoData & videoData,
                          const throughputData & throughput) :
 
     AdaptationAlgorithm(videoData, playbackData, bufferData, throughput),
-    OpenGymEnv(),
+    
     m_highestRepIndex (videoData.averageBitrate.size () - 1),
     m_lastSegmentIndex( (int64_t) videoData.segmentSize.at (0).size () - 1)
 {
     NS_LOG_INFO(this);
     NS_LOG_INFO("Connecting to AI Proxy");
     uint32_t openGymPort = 5555;
-    m_repindex = 0;
 
-    //openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
-    //myGymEnv = CreateObject<MyGymEnv> (m_highestRepIndex, m_lastSegmentIndex);
-    //myGymEnv->SetOpenGymInterface(openGymInterface);
-    
     openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
     SetOpenGymInterface(openGymInterface);
     
