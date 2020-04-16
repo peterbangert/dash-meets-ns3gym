@@ -38,9 +38,6 @@
 #include "ns3/tcp-stream-helper.h"
 #include "ns3/tcp-stream-interface.h"
 
-
-
-
 template <typename T>
 std::string ToString(T val)
 {
@@ -72,12 +69,9 @@ main (int argc, char *argv[])
   uint32_t numberOfClients;
   std::string adaptationAlgo;
   std::string segmentSizeFilePath;
-  uint32_t interrupts;
 
   bool shortGuardInterval = true;
 
-
-NS_LOG_UNCOND("henlo");
   CommandLine cmd;
   cmd.Usage ("Simulation of streaming with DASH.\n");
   cmd.AddValue ("simulationId", "The simulation's index (for logging purposes)", simulationId);
@@ -85,26 +79,37 @@ NS_LOG_UNCOND("henlo");
   cmd.AddValue ("segmentDuration", "The duration of a video segment in microseconds", segmentDuration);
   cmd.AddValue ("adaptationAlgo", "The adaptation algorithm that the client uses for the simulation", adaptationAlgo);
   cmd.AddValue ("segmentSizeFile", "The relative path (from ns-3.x directory) to the file containing the segment sizes in bytes", segmentSizeFilePath);
-  cmd.AddValue ("interrupts", "Number of udp clients interfering", interrupts);
   cmd.Parse (argc, argv);
 
+  std::string temp;  
+  //vector<string> adaptationAlgos;
+  std::vector<std::string> adaptationAlgos; ///< list of attributes
+
+  if (adaptationAlgo != "ns3gym") {
+      for (uint i =0; i < numberOfClients -1; i++) {
+          adaptationAlgos.push_back(adaptationAlgo);
+      }
+  } else {
+      for (uint i =0; i < numberOfClients -1; i++) {
+          if (i % 3 == 0) {
+            adaptationAlgos.push_back("tobasco");
+          } 
+          else if (i % 3 == 1) {
+            adaptationAlgos.push_back("festive");
+          }
+          else  {
+            adaptationAlgos.push_back("panda");
+          }         
+      }
+  }
+  adaptationAlgos.push_back("ns3gym");
 
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
-  //Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
-  //Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
-
-  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (124288));
-  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (124288));
+  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
+  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
 
   WifiHelper wifiHelper;
-
-  //Contraining the Network for testing purposes
-  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
-  
-  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
-
-
-NS_LOG_UNCOND("henlo");
+  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
   wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
 
 
@@ -126,17 +131,13 @@ NS_LOG_UNCOND("henlo");
   wifiPhy.Set ("Antennas", UintegerValue (4));
   // wifiPhy.Set ("RxAntennas", UintegerValue (4));
 
-  /* Create Nodes +3 for interrupt node*/
+  /* Create Nodes */
   NodeContainer networkNodes;
-  networkNodes.Create (numberOfClients + interrupts);
+  networkNodes.Create (numberOfClients + 2);
 
   /* Determin access point and server node */
   Ptr<Node> apNode = networkNodes.Get (0);
   Ptr<Node> serverNode = networkNodes.Get (1);
-  //Ptr<Node> interruptNode = networkNodes.Get (2);
-
-
-NS_LOG_UNCOND("henlo");
 
   /* Configure clients as STAs in the WLAN */
   NodeContainer staContainer;
@@ -146,24 +147,15 @@ NS_LOG_UNCOND("henlo");
       staContainer.Add (*i);
     }
 
-
-NS_LOG_UNCOND("henlo");
-  
   /* Determin client nodes for object creation with client helper class */
   std::vector <std::pair <Ptr<Node>, std::string> > clients;
-  for (NodeContainer::Iterator i = networkNodes.Begin () +2+ interrupts; i != networkNodes.End (); ++i)
+  int algoIndex = 0;
+  for (NodeContainer::Iterator i = networkNodes.Begin () + 2; i != networkNodes.End (); ++i)
     {
-      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgo);
+      
+      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgos.at(algoIndex) );
       clients.push_back (client);
-    }
-
-NS_LOG_UNCOND("henlo");
-
-  /* Container for interrupting nodes */
-  NodeContainer interruptNodes;
-  for (NodeContainer::Iterator i = networkNodes.Begin () +2; i != networkNodes.End () - interrupts; ++i)
-    {
-      interruptNodes.Add(*i);   
+      algoIndex ++;
     }
 
   /* Set up WAN link between server node and access point*/
@@ -191,7 +183,6 @@ NS_LOG_UNCOND("henlo");
   NetDeviceContainer apDevice;
   apDevice = wifiHelper.Install (wifiPhy, wifiMac, apNode);
 
-NS_LOG_UNCOND("henlo");
 
 
   Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/ChannelWidth", UintegerValue (40));
@@ -252,7 +243,7 @@ NS_LOG_UNCOND("henlo");
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (posAp);
   positionAlloc->Add (posServer);
-NS_LOG_UNCOND("henlo");
+
 
   Ptr<RandomRoomPositionAllocator> randPosAlloc = CreateObject<RandomRoomPositionAllocator> ();
   randPosAlloc->AssignStreams (simulationId);
@@ -276,7 +267,7 @@ NS_LOG_UNCOND("henlo");
 
   
   // allocate clients to positions
-  for (uint i = 0; i < numberOfClients + interrupts; i++)
+  for (uint i = 0; i < numberOfClients; i++)
     {
       Vector pos = Vector (randPosAlloc->GetNext());
       positionAlloc->Add (pos);
@@ -285,7 +276,7 @@ NS_LOG_UNCOND("henlo");
       clientPosLog << ToString(pos.x) << ", " << ToString(pos.y) << ", " << ToString(pos.z) << "\n";
       clientPosLog.flush ();
     }
-NS_LOG_UNCOND("henlo");
+
 
   MobilityHelper mobility;
   mobility.SetPositionAllocator (positionAlloc);
@@ -300,8 +291,7 @@ NS_LOG_UNCOND("henlo");
   // p2p.EnablePcapAll ("p2p-", true);
   // wifiPhy.EnablePcapAll ("wifi-", true);
 
-  
- 
+
 
   /* Install TCP Receiver on the access point */
   TcpStreamServerHelper serverHelper (port);
@@ -319,33 +309,6 @@ NS_LOG_UNCOND("henlo");
       double startTime = 2.0 + ((i * 3) / 100.0);
       clientApps.Get (i)->SetStartTime (Seconds (startTime));
     }
-/*
-  UdpClientHelper client (serverAddress, port);
-  client.SetAttribute ("MaxPackets", UintegerValue (20));
-  client.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  client.SetAttribute ("PacketSize", UintegerValue (1024));
-
-  ApplicationContainer apps = client.Install (interruptNodes);
-  double startTime = (double)rand() / 100.0;
-  apps.Start (Seconds (startTime));
-  apps.Stop (Seconds (startTime + 10.0));      
-*/
-    NS_LOG_UNCOND("henlo");
-
-  uint32_t payloadSize = 1448;
-  OnOffHelper onoff ("ns3::TcpSocketFactory", Ipv4Address::GetAny ());
-  onoff.SetAttribute ("OnTime",  StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  onoff.SetAttribute ("PacketSize", UintegerValue (payloadSize));
-  onoff.SetAttribute ("DataRate", DataRateValue (1000000000)); //bit/s
-  AddressValue remoteAddress (InetSocketAddress (wanInterface.GetAddress (0), port));
-  onoff.SetAttribute ("Remote", remoteAddress);
-  ApplicationContainer clientApp = onoff.Install (interruptNodes);
-  double startTime = (double)rand() / 100.0;
-  NS_LOG_UNCOND(startTime);
-  clientApp.Start (Seconds (startTime));
-  clientApp.Stop (Seconds (startTime + 10.0));  
-
 
 
   NS_LOG_INFO ("Run Simulation.");

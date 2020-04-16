@@ -1,0 +1,51 @@
+##
+## Default Runtime Arguments for agent.py
+##
+##  Command line arguments will override default configuration
+##
+
+## SegmentSize.txt as part of dash-meets-ns3gym module
+segment_size_file: "../segmentSizes.txt"
+
+## NN parameters
+## Episode, amount of itmes ns3 simulation will be reinitialized.
+##   increase when NN training 
+## Save/Load model, save the trained weights of NN 
+## please indicate filename to save/load model weights as
+episodes: 1
+save_model: False
+load_model: False
+
+## Reward function used. 
+## options: buffer, hd, log, default, rebuffer, rebuffer_low
+reward: default
+
+## Create mp4 Video of simulation
+animate: False
+
+## Number of other devices in LAN
+competitors: 4
+
+## Wifi, ethernet
+medium: wifi
+
+simulation: 
+  normal: tcp-stream
+  wifi: tcp-stream
+  ethernet: tcp-stream-ethernet
+  compete: tcp-stream-compete
+
+## Adaptation Algo
+## random, festive, panda, tobasco
+adaptation_aglorithm: ns3gym
+
+## Segment Duration
+segment_duration: 2000000
+
+## Simulation ID
+##  useful for organizing results
+sim_id: 1
+
+## Network Choice
+##  choose between simple-nn, pensive, or your own network.
+network: pensive

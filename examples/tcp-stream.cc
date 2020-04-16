@@ -86,18 +86,15 @@ main (int argc, char *argv[])
 
 
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
-  //Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
-  //Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
-
-  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (124288));
-  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (124288));
+  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
+  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
 
   WifiHelper wifiHelper;
 
   //Contraining the Network for testing purposes
-  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
+  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
   
-  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
+  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
 
 
   wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
