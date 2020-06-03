@@ -63,46 +63,66 @@ main (int argc, char *argv[])
 //   LogComponentEnable ("TcpStreamServerApplication", LOG_LEVEL_INFO);
 // #endif
 
-  uint64_t segmentDuration;
+  uint64_t segmentDuration = 2000000;
   // The simulation id is used to distinguish log file results from potentially multiple consequent simulation runs.
-  uint32_t simulationId;
-  uint32_t numberOfClients;
-  std::string adaptationAlgo;
-  std::string segmentSizeFilePath;
+  uint32_t simulationId = 1;
+  
+  uint32_t pandaClients = 0;
+  uint32_t festiveClients = 0;
+  uint32_t tobascoClients = 0;
+  uint32_t ns3gymClients = 0;
 
+  float firstThroughputChange = 0.0;
+  float firstThroughputChangeTime = 40.0;
+  float secondThroughputChange = 0.0;
+  float secondThroughputChangeTime = 80.0;
+ 
+  bool moving = false;
+
+  std::string adaptationAlgo = "ns3gym";
+  std::string segmentSizeFilePath = "contrib/dash-meets-ns3gym/segmentSizes.txt";
+  uint32_t bitRate = 100000;
   bool shortGuardInterval = true;
 
   CommandLine cmd;
   cmd.Usage ("Simulation of streaming with DASH.\n");
   cmd.AddValue ("simulationId", "The simulation's index (for logging purposes)", simulationId);
-  cmd.AddValue ("numberOfClients", "The number of clients", numberOfClients);
+
+  cmd.AddValue ("pandaClients", "The number of Panda clients", pandaClients);
+  cmd.AddValue ("festiveClients", "The number of Festive clients", festiveClients);
+  cmd.AddValue ("tobascoClients", "The number of Tobasco clients", tobascoClients);
+  cmd.AddValue ("ns3gymClients", "The number of Ns3gym clients", ns3gymClients);
+
+  cmd.AddValue ("moving", "Moving or Stationary", moving);
+
+  cmd.AddValue ("firstThroughputChange", "Percentage throughput change", firstThroughputChange);
+  cmd.AddValue ("firstThroughputChangeTime", "Time (s) of first throughput change", firstThroughputChangeTime);
+  cmd.AddValue ("secondThroughputChange", "Percentage throughput change", secondThroughputChange);
+  cmd.AddValue ("secondThroughputChangeTime", "Time (s) of first throughput change", secondThroughputChangeTime);
+
   cmd.AddValue ("segmentDuration", "The duration of a video segment in microseconds", segmentDuration);
-  cmd.AddValue ("adaptationAlgo", "The adaptation algorithm that the client uses for the simulation", adaptationAlgo);
   cmd.AddValue ("segmentSizeFile", "The relative path (from ns-3.x directory) to the file containing the segment sizes in bytes", segmentSizeFilePath);
+  cmd.AddValue ("bitRate", "Traffic speed from server", bitRate);
   cmd.Parse (argc, argv);
 
   std::string temp;  
   //vector<string> adaptationAlgos;
   std::vector<std::string> adaptationAlgos; ///< list of attributes
-
-  if (adaptationAlgo != "ns3gym") {
-      for (uint i =0; i < numberOfClients -1; i++) {
-          adaptationAlgos.push_back(adaptationAlgo);
-      }
-  } else {
-      for (uint i =0; i < numberOfClients -1; i++) {
-          if (i % 3 == 0) {
-            adaptationAlgos.push_back("tobasco");
-          } 
-          else if (i % 3 == 1) {
-            adaptationAlgos.push_back("festive");
-          }
-          else  {
-            adaptationAlgos.push_back("panda");
-          }         
-      }
+  
+  for (uint i =0; i < pandaClients; i++) {
+      adaptationAlgos.push_back("panda");
   }
-  adaptationAlgos.push_back("ns3gym");
+  for (uint i =0; i < festiveClients; i++) {
+      adaptationAlgos.push_back("festive");
+  }
+  for (uint i =0; i < tobascoClients; i++) {
+      adaptationAlgos.push_back("tobasco");
+  }
+  for (uint i =0; i < ns3gymClients; i++) {
+      adaptationAlgos.push_back("ns3gym");
+  }
+
+  uint32_t numberOfClients = ns3gymClients + tobascoClients + festiveClients + pandaClients;
 
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
   Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
@@ -160,7 +180,8 @@ main (int argc, char *argv[])
 
   /* Set up WAN link between server node and access point*/
   PointToPointHelper p2p;
-  p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
+  //p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
+  p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(bitRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
   p2p.SetDeviceAttribute ("Mtu", UintegerValue (1500));
   p2p.SetChannelAttribute ("Delay", StringValue ("45ms"));
   NetDeviceContainer wanIpDevices;
@@ -280,7 +301,13 @@ main (int argc, char *argv[])
 
   MobilityHelper mobility;
   mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+  if (moving) {
+    mobility.SetMobilityModel ("ns3::RandomDirection2dMobilityModel");
+  } else {
+    mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  }
+  
   // install all of the nodes that have been added to positionAlloc to the mobility model
   mobility.Install (networkNodes);
   BuildingsHelper::Install (networkNodes); // networkNodes contains all nodes, stations and ap
@@ -288,7 +315,7 @@ main (int argc, char *argv[])
 
   // if logging of the packets between AP---Server or AP and the STAs is wanted, these two lines can be activated
 
-  // p2p.EnablePcapAll ("p2p-", true);
+  //p2p.EnablePcapAll ("p2p-", true);
   // wifiPhy.EnablePcapAll ("wifi-", true);
 
 
@@ -309,6 +336,13 @@ main (int argc, char *argv[])
       double startTime = 2.0 + ((i * 3) / 100.0);
       clientApps.Get (i)->SetStartTime (Seconds (startTime));
     }
+
+  Simulator::Schedule (Seconds(firstThroughputChangeTime), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(bitRate * (1 - firstThroughputChange)) +"kb/s"));
+  Simulator::Schedule (Seconds(secondThroughputChangeTime), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(bitRate * (1 - secondThroughputChange)) +"kb/s"));
 
 
   NS_LOG_INFO ("Run Simulation.");

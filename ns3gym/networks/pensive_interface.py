@@ -51,12 +51,17 @@ class Pensive_Interface():
         response = self.conn.getresponse()
         self.action.nextRepIndex =  int(response.read())
 
-        #decide delay time
-        randbuf = random.uniform(28, 32)
-        if (self.observations.bufferLevelNew[-1]  > randbuf / self.observations.seconds_in_micro):
-            self.action.nextDownloadDelay = self.observations.bufferLevelNew[-1] - randbuf / self.observations.seconds_in_micro
-        else:
-            self.action.nextDownloadDelay = 0
 
+        download_time = (float(self.observations.transmissionEnd[-1]) - float(self.observations.transmissionStart[-1])) * self.observations.seconds_in_micro
+        size = float(self.observations.bytesReceived[-1]) * self.observations.mega_in_bytes
+        throughput = size / download_time * 8  #bytes to bits
+        print("throughput est (Mb/s) : ", throughput )
+        #decide delay time
+        #randbuf = random.uniform(28, 32)
+        #if (self.observations.bufferLevelNew[-1]  > randbuf / self.observations.seconds_in_micro):
+        #    self.action.nextDownloadDelay = self.observations.bufferLevelNew[-1] - randbuf / self.observations.seconds_in_micro
+        #else:
+        #    self.action.nextDownloadDelay = 0
+        self.action.nextDownloadDelay = 0
     def train(self):
         return

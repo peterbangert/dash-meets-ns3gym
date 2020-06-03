@@ -229,6 +229,13 @@ private:
    */
   void LogThroughput (uint32_t packetSize);
   /*
+   * \brief Log throughput information about entire segment download
+   *
+   * - Time of completed segment download
+   * - size of segment
+   */
+  void LogObservedThroughput ();
+  /*
    * \brief Log information about playback process
    *
    * - index of segment of which playback will start next
@@ -284,6 +291,7 @@ private:
   std::ofstream playbackLog; //!< Output stream for logging playback information
   std::ofstream bufferLog; //!< Output stream for logging buffer course
   std::ofstream throughputLog; //!< Output stream for logging throughput information
+  std::ofstream observedThroughputLog; //!< Output stream for logging observed throughput information
   std::ofstream bufferUnderrunLog; //!< Output stream for logging starting and ending of buffer underruns
 
   uint64_t m_downloadRequestSent; //!< Logging the point in time in microseconds when a download request was sent to the server

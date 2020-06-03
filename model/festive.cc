@@ -33,7 +33,8 @@ FestiveAlgorithm::FestiveAlgorithm (  const videoData &videoData,
   m_delta (m_videoData.segmentDuration),
   m_alpha (12.0),
   m_highestRepIndex (videoData.averageBitrate.size () - 1),
-  m_thrptThrsh (0.85)
+  m_thrptThrsh (0.85),
+  m_k(40 / m_videoData.segmentDuration)
 {
   NS_LOG_INFO (this);
   m_smooth.push_back (5);  // after how many steps switch up is possible
@@ -60,7 +61,7 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
   int64_t bufferNow = m_bufferData.bufferLevelNew.back () - (timeNow - m_throughput.transmissionEnd.back ());
 
   // not enough completed requests, select nextRepIndex
-  if (m_throughput.transmissionEnd.size () < 20)
+  if (m_throughput.transmissionEnd.size () <  (unsigned) m_k)
     {
       answer.nextRepIndex = 0;
       answer.decisionCase = 1;
@@ -80,7 +81,7 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
           thrptEstimationTmp.push_back ((8.0 * m_throughput.bytesReceived.at (sd))
                                         / ((double)((m_throughput.transmissionEnd.at (sd) - m_throughput.transmissionRequested.at (sd)) / 1000000.0)));
         }
-      if (thrptEstimationTmp.size () == 20)
+      if (thrptEstimationTmp.size () == (unsigned) m_k)
         {
           break;
         }

@@ -22,9 +22,9 @@ BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 BITRATE_REWARD_MAP = {0: 0, 300: 1, 750: 2, 1200: 3, 1850: 12, 2850: 15, 4300: 20}
 M_IN_K = 1000.0
 BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 221.0
-TOTAL_VIDEO_CHUNKS = 221
-DEFAULT_QUALITY = 0  # default video quality without agent
+CHUNK_TIL_VIDEO_END_CAP = 48.0
+TOTAL_VIDEO_CHUNKS = 48
+DEFAULT_QUALITY = 2  # default video quality without agent
 REBUF_PENALTY = 4.3  # 1 sec rebuffering -> this number of Mbps
 SMOOTH_PENALTY = 1
 ACTOR_LR_RATE = 0.0001
@@ -57,7 +57,7 @@ size_video6 = [3128, 44788, 83412, 92274, 56210, 56494, 43658, 32596, 41642, 331
 
 
 def get_chunk_size(quality, index):
-    if ( index < 0 or index > 48 ):
+    if ( index < 0 or index > TOTAL_VIDEO_CHUNKS ):
         return 0
     # note that the quality and video labels are inverted (i.e., quality 8 is highest and this pertains to video1)
     sizes = {5: size_video1[index], 4: size_video2[index], 3: size_video3[index], 2: size_video4[index], 1: size_video5[index], 0: size_video6[index]}

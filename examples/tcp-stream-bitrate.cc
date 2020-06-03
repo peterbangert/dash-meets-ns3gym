@@ -280,7 +280,8 @@ main (int argc, char *argv[])
   // p2p.EnablePcapAll ("p2p-", true);
   // wifiPhy.EnablePcapAll ("wifi-", true);
 
-
+  Simulator::Schedule (Seconds(40.0), Config::Set, "/NodeList/1/DeviceList/1/$ns3::PointToPointNetDevice/DataRate",StringValue (ToString(bitRate /2) +"kb/s"));
+  Simulator::Schedule (Seconds(80.0), Config::Set, "/NodeList/1/DeviceList/1/$ns3::PointToPointNetDevice/DataRate",StringValue (ToString(bitRate ) +"kb/s"));
 
   /* Install TCP Receiver on the access point */
   TcpStreamServerHelper serverHelper (port);

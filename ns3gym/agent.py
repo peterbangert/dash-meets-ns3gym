@@ -38,7 +38,7 @@ def main(args):
     NN = Ns3gymNetwork(args, observations, action)
 
 
-    for episode in range(args.episodes):
+    for episode in range(observations.episodes):
         
         while (observations.segmentCounter < observations.total_video_chunks -1): 
 
@@ -56,22 +56,16 @@ def main(args):
             obs = env.reset()
             observations.reset(args, obs)
 
-    if args.animate:
+    if observations.animate:
         animate(observations)    
 
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='Arguments for Neural Network')
-    parser.add_argument('--segment_size_file', type=str, help='Location of segment size file, default is in repo')
-    parser.add_argument('--episodes', type=int, help='No of training episodes, default 1')
-    parser.add_argument('--save_model',type=str, help='Save the trained model, filename')
-    parser.add_argument('--load_model', type=str, help='Name of saved model, searches saved-models/')
-    parser.add_argument('--reward', type=str, help='Reward function, options : quality, rebuff, rebuff_lowvar, default, log, hd')
-    parser.add_argument('--animate', type=str, help='Create mp4 animation of result, give filename, default none')
-    parser.add_argument('--medium', type=str, help='wifi or ethernet')
-    parser.add_argument('--competitors', type=str, help='Number of devices competing on LAN')
-    parser.add_argument('--network', type=str, help='Choose which network the agent should use to decide')
+    parser.add_argument('--simulationId', type=str, help='Simulation Id')
+    parser.add_argument('--segmentSizeFilePath', type=str, help='Location of segment size file, default is in repo')
+    parser.add_argument('--bitRate', type=str, help='Bitrate between server and AP')
     args = Args({**load_yaml('conf.d/simulation.yml'), **{ k:v for k,v in vars(parser.parse_args()).items() if v is not None}})
     return  args
 

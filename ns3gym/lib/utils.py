@@ -10,15 +10,15 @@ from os import system
 import libtmux
 
 def ns3run(args):
+
     
-    command = ['./waf',  '--run="',
-        args.simulation[args.medium],
-        '--simulationId=' + str(args.sim_id) ,
-        '--numberOfClients=' + str(args.competitors) ,
-        '--adaptationAlgo=' + args.adaptation_aglorithm , 
-        '--segmentDuration=' + str(args.segment_duration),
-        '--segmentSizeFile=contrib/dash-meets-ns3gym/' + args.segment_size_file[3:] ,
-         '"' ]
+    
+    command = ['./waf',  '--run="', 'tcp-stream-compete']
+
+    print(vars(args))
+    for k,v in vars(args).items():
+        command.append("--" + k + "=" + str(v))
+    command.append('"')
 
     server = libtmux.Server()
     if (server.has_session('ns3')):

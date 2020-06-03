@@ -30,18 +30,18 @@ class Observations(dict):
 
 
     def set_video_dimensions(self, args):
-        reader = csv.reader(open(args.segment_size_file, "r"), delimiter=" ")
+        reader = csv.reader(open("../../../" + args.segmentSizeFile, "r"), delimiter=" ")
         self.video_sizes = np.asarray(list(reader))
         self.A_DIM = self.video_sizes.shape[0]
         self.total_video_chunks = self.video_sizes.shape[1]
-        self.segment_duration = args.segment_duration
+        self.segmentDuration = args.segmentDuration
 
 
     def update_observations(self, obs):
 
         # Calculate time spent Rebuffing during last segment download.
         if (obs['bufferLevelOld'] == 0 and obs['segmentCounter'] > 1) :
-            self.rebuffer_time = obs['timeNow'] - self.__dict__['playbackStart'][-1] + self.segment_duration
+            self.rebuffer_time = obs['timeNow'] - self.__dict__['playbackStart'][-1] + self.segmentDuration
             self.total_rebuffer_time += self.rebuffer_time 
         else: 
             self.rebuffer_time =0
@@ -95,7 +95,6 @@ class Action(object):
     def __set_nextDownloadDelay(self, value):
         if (value < 0  or value > self.delay_limit):
             raise ValueError("Download Delay time must be with boundes [%d:%d]" % (0,self.delay_limit) )
-        print("setting download delay %d" % value)
         self.__nextDownloadDelay = int(value)
 
     nextRepIndex = property(__get_nextRepIndex,__set_nextRepIndex)

@@ -5,47 +5,30 @@
 ##
 
 ## SegmentSize.txt as part of dash-meets-ns3gym module
-segment_size_file: "../segmentSizes.txt"
+segmentSizeFile: "contrib/dash-meets-ns3gym/segmentSizes48.txt"
 
-## NN parameters
-## Episode, amount of itmes ns3 simulation will be reinitialized.
-##   increase when NN training 
-## Save/Load model, save the trained weights of NN 
-## please indicate filename to save/load model weights as
-episodes: 1
-save_model: False
-load_model: False
+## Decide whether clients should randomly move around building
+moving: 0
 
-## Reward function used. 
-## options: buffer, hd, log, default, rebuffer, rebuffer_low
-reward: default
+## Bitrate between server and access point (kb/s)
+bitRate: 6000
 
-## Create mp4 Video of simulation
-animate: False
-
-## Number of other devices in LAN
-competitors: 4
-
-## Wifi, ethernet
-medium: wifi
-
-simulation: 
-  normal: tcp-stream
-  wifi: tcp-stream
-  ethernet: tcp-stream-ethernet
-  compete: tcp-stream-compete
+## Time and percentage amount of when throughput from server to AP should change
+firstThroughputChange: 0.5
+firstThroughputChangeTime: 50.0
+secondThroughputChange: 0.0
+secondThroughputChangeTime: 100.0 
 
 ## Adaptation Algo
 ## random, festive, panda, tobasco
-adaptation_aglorithm: ns3gym
+pandaClients: 0
+festiveClients: 0
+tobascoClients: 0
+ns3gymClients: 1
 
 ## Segment Duration
-segment_duration: 2000000
+segmentDuration: 5000000
 
 ## Simulation ID
 ##  useful for organizing results
-sim_id: 1
-
-## Network Choice
-##  choose between simple-nn, pensive, or your own network.
-network: pensive
+simulationId: 1

@@ -259,7 +259,7 @@ TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
     {
       algo = new FestiveAlgorithm (m_videoData, m_playbackData, m_bufferData, m_throughput);
     }
-    else if (algorithm == "ns3gym")
+  else if (algorithm == "ns3gym")
     {
       algo = new MyGymEnv (m_videoData, m_playbackData, m_bufferData, m_throughput);
     }
@@ -303,6 +303,10 @@ TcpStreamClient::RequestRepIndex ()
   m_bDelay = answer.nextDownloadDelay;
   // std::cerr << m_segmentCounter << "\n";
   LogAdaptation (answer);
+  if (m_segmentCounter > 0) {
+    LogObservedThroughput();
+  }
+  
 }
 
 template <typename T>
@@ -560,6 +564,17 @@ TcpStreamClient::LogThroughput (uint32_t packetSize)
 }
 
 void
+TcpStreamClient::LogObservedThroughput ()
+{
+  NS_LOG_FUNCTION (this);
+  double throughput = (8.0 * m_throughput.bytesReceived.back() * 0.000001)
+                                        / ((double)((m_throughput.transmissionEnd.back() - m_throughput.transmissionStart.back()) / 1000000.0));
+  observedThroughputLog << std::setfill (' ') << std::setw (13) << Simulator::Now ().GetMicroSeconds ()  / (double) 1000000 << " "
+                << std::setfill (' ') << std::setw (13) << throughput << "\n";
+  observedThroughputLog.flush ();
+}
+
+void
 TcpStreamClient::LogDownload ()
 {
   NS_LOG_FUNCTION (this);
@@ -635,6 +650,11 @@ TcpStreamClient::InitializeLogFiles (std::string simulationId, std::string clien
   throughputLog.open (tLog.c_str ());
   throughputLog << "     Time_Now Bytes Received \n";
   throughputLog.flush ();
+
+  std::string otLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "observedThroughputLog.txt";
+  observedThroughputLog.open (otLog.c_str ());
+  observedThroughputLog << "     Time_Now Observed Throughput \n";
+  observedThroughputLog.flush ();
 
   std::string buLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "bufferUnderrunLog.txt";
   bufferUnderrunLog.open (buLog.c_str ());

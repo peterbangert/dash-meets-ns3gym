@@ -26,8 +26,8 @@ actionHistoryAnimation : []
 throughputHistory : []
 
 # Number of total chunks of video                   
-total_video_chunks: 221
-left_chunks: 221
+total_video_chunks: 64
+left_chunks: 64
 # 2d array of segments sizes, by quality
 #   VIDEO_SIZES[n][m], n quaity, m segment
 video_sizes: null
@@ -64,3 +64,22 @@ stepTime: 1.0  # seconds
 seed: 0
 simArgs: "{\"--simTime\": simTime,\"--testArg\": 123}"
 debug: False
+
+
+## Network Choice
+##  choose between simple-nn, pensive, or your own network.
+network: pensive
+
+
+## NN parameters
+## Episode, amount of itmes ns3 simulation will be reinitialized.
+##   increase when NN training 
+## Save/Load model, save the trained weights of NN 
+## please indicate filename to save/load model weights as
+episodes: 1
+save_model: False
+load_model: False
+
+
+## Create mp4 Video of simulation
+animate: False
