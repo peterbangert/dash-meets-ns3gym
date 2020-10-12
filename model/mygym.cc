@@ -20,7 +20,8 @@ NS_OBJECT_ENSURE_REGISTERED (MyGymEnv);
 MyGymEnv::MyGymEnv(const videoData & videoData,
                          const playbackData & playbackData,
                          const bufferData & bufferData,
-                         const throughputData & throughput) :
+                         const throughputData & throughput,
+                         Ptr<OpenGymInterface> openGymInterface) :
 
     AdaptationAlgorithm(videoData, playbackData, bufferData, throughput),
     
@@ -28,8 +29,8 @@ MyGymEnv::MyGymEnv(const videoData & videoData,
     m_lastSegmentIndex( (int64_t) videoData.segmentSize.at (0).size () - 1)
 {
     NS_LOG_INFO(this);
-    NS_LOG_INFO("Connecting to AI Proxy");
-    openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
+    //NS_LOG_INFO("Connecting to AI Proxy");
+    //openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
     SetOpenGymInterface(openGymInterface);
     m_repindex =0;
     m_downloadDelay =0;
@@ -41,6 +42,7 @@ MyGymEnv::GetNextRep(const int64_t segmentCounter, int64_t clientId) {
     const int64_t timeNow = Simulator::Now().GetMicroSeconds();
 
     m_segmentCounter = segmentCounter;
+    m_clientId = clientId;
     // Default Response
     algorithmReply answer;
     answer.nextRepIndex = 0;
@@ -140,6 +142,7 @@ MyGymEnv::GetObservation()
 {
   NS_LOG_FUNCTION (this);
 
+  Ptr<OpenGymDiscreteContainer> clientId = CreateObject<OpenGymDiscreteContainer> ( ); 
   Ptr<OpenGymDiscreteContainer> segmentCounter = CreateObject<OpenGymDiscreteContainer> ( ); 
   Ptr<OpenGymDiscreteContainer> timeNow = CreateObject<OpenGymDiscreteContainer> ( );
   Ptr<OpenGymDiscreteContainer> bufferLevelOld = CreateObject<OpenGymDiscreteContainer> ( );
@@ -151,7 +154,7 @@ MyGymEnv::GetObservation()
   Ptr<OpenGymDiscreteContainer> playbackIndex = CreateObject<OpenGymDiscreteContainer> ( );
   Ptr<OpenGymDiscreteContainer> playbackStart = CreateObject<OpenGymDiscreteContainer> ( );
   
-
+  clientId->SetValue( m_clientId );
   segmentCounter->SetValue(m_segmentCounter );
   timeNow->SetValue(m_bufferData.timeNow.back() );
   bufferLevelOld->SetValue(m_bufferData.bufferLevelOld.back() ); 
@@ -165,6 +168,7 @@ MyGymEnv::GetObservation()
 
 
   Ptr<OpenGymDictContainer> space = CreateObject<OpenGymDictContainer> ();
+  space->Add("clientId", clientId);
   space->Add("segmentCounter", segmentCounter);
   space->Add("timeNow", timeNow);
   space->Add("bufferLevelOld",bufferLevelOld ); 

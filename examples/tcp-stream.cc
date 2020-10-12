@@ -74,6 +74,7 @@ main (int argc, char *argv[])
   std::string segmentSizeFilePath;
 
   bool shortGuardInterval = true;
+  Ptr<OpenGymInterface> openGymInterface;
 
   CommandLine cmd;
   cmd.Usage ("Simulation of streaming with DASH.\n");
@@ -287,7 +288,7 @@ main (int argc, char *argv[])
   clientHelper.SetAttribute ("SegmentSizeFilePath", StringValue (segmentSizeFilePath));
   clientHelper.SetAttribute ("NumberOfClients", UintegerValue(numberOfClients));
   clientHelper.SetAttribute ("SimulationId", UintegerValue (simulationId));
-  ApplicationContainer clientApps = clientHelper.Install (clients);
+  ApplicationContainer clientApps = clientHelper.Install (clients,openGymInterface );
   for (uint i = 0; i < clientApps.GetN (); i++)
     {
       double startTime = 2.0 + ((i * 3) / 100.0);

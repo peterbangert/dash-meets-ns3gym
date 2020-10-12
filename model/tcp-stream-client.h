@@ -32,6 +32,7 @@
 #include "festive.h"
 #include "panda.h"
 #include "mygym.h"
+#include "ns3/opengym-module.h"
 
 
 
@@ -66,7 +67,7 @@ public:
    *
    * \param algorithm the name of the algorithm to use for instantiating an adaptation algorithm object.
    */
-  void Initialise (std::string algorithm, uint16_t clientId);
+  void Initialise (std::string algorithm, uint16_t clientId, Ptr<OpenGymInterface> openGymInterface);
 
   /**
    * \brief Set the remote address and port
@@ -236,6 +237,13 @@ private:
    */
   void LogObservedThroughput ();
   /*
+   * \brief Log congestion window changes
+   *
+   * - Time of completed segment download
+   * - window size
+   */
+  void LogCongestionWindow (uint32_t oldCwnd, uint32_t newCwnd);
+  /*
    * \brief Log information about playback process
    *
    * - index of segment of which playback will start next
@@ -293,6 +301,8 @@ private:
   std::ofstream throughputLog; //!< Output stream for logging throughput information
   std::ofstream observedThroughputLog; //!< Output stream for logging observed throughput information
   std::ofstream bufferUnderrunLog; //!< Output stream for logging starting and ending of buffer underruns
+  std::ofstream congestionWindowLog; //!< 
+
 
   uint64_t m_downloadRequestSent; //!< Logging the point in time in microseconds when a download request was sent to the server
 

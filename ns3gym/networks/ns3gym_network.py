@@ -4,9 +4,9 @@ from .simple_nn import Simple_NN
 
 class Ns3gymNetwork():
 
-    def __init__(self, args, observations, action):
+    def __init__(self, args, observations, action, clientId):
         if observations.network == "pensive":
-            self.network = Pensive_Interface(args, observations, action)
+            self.network = Pensive_Interface(args, observations, action, clientId)
         if observations.network == "simple-nn":
             self.network = Simple_NN(args, observations, action)
 

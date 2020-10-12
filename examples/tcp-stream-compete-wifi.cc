@@ -39,7 +39,7 @@
 #include "ns3/tcp-stream-interface.h"
 #include "ns3/traffic-control-module.h"
 #include "ns3/opengym-module.h"
-#include "ns3/propagation-loss-model.h"
+
 
 template <typename T>
 std::string ToString(T val)
@@ -58,13 +58,7 @@ CourseChange (std::string context, Ptr<const MobilityModel> model)
 {
   Vector position = model->GetPosition ();
   NS_LOG_UNCOND (context << " time : " << Now().GetSeconds()  <<
-    " x = " << position.x << ", y = " << position.y << ", z = " << position.z);
-}
-
-static void
-RxDrop (Ptr<const Packet> p)
-{
-  NS_LOG_UNCOND ("RxDrop at " << Simulator::Now ().GetSeconds ());
+    " x = " << position.x << ", y = " << position.y);
 }
 
 
@@ -129,13 +123,14 @@ main (int argc, char *argv[])
   cmd.AddValue ("wifiRate", "Traffic speed from server", wifiRate);
   
   cmd.Parse (argc, argv);
-  ns3::RngSeedManager::SetSeed(simulationId);
 
   std::string temp;  
   //vector<string> adaptationAlgos;
   std::vector<std::string> adaptationAlgos; ///< list of attributes
   
-  
+  for (uint i =0; i < ns3gymClients; i++) {
+      adaptationAlgos.push_back("ns3gym");
+  }
   for (uint i =0; i < pandaClients; i++) {
       adaptationAlgos.push_back("panda");
   }
@@ -144,9 +139,6 @@ main (int argc, char *argv[])
   }
   for (uint i =0; i < tobascoClients; i++) {
       adaptationAlgos.push_back("tobasco");
-  }
-  for (uint i =0; i < ns3gymClients; i++) {
-      adaptationAlgos.push_back("ns3gym");
   }
   
   if (ns3gymClients > 0) {
@@ -158,14 +150,14 @@ main (int argc, char *argv[])
 
   
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
-  //Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
-  //Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
+  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
+  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpNewReno"));
 
 
   WifiHelper wifiHelper;
-  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
-  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211a);
+  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
+  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211b);
   if (wifiRate == 0 ) {
     wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
   } else {
@@ -174,31 +166,25 @@ main (int argc, char *argv[])
 
 
   /* Set up Legacy Channel */
+  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
   
-  Ptr<YansWifiChannel> wifiChannel = CreateObject <YansWifiChannel> ();
-  Ptr<NakagamiPropagationLossModel> rssLossModel = CreateObject<NakagamiPropagationLossModel> ();
-
-  wifiChannel->SetPropagationLossModel (rssLossModel);
-  wifiChannel->SetPropagationDelayModel (CreateObject <ConstantSpeedPropagationDelayModel> ());
-
-  //YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
   // We do not set an explicit propagation loss model here, we just use the default ones that get applied with the building model.
 
   /* Setup Physical Layer */
   YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
   wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-  wifiPhy.Set ("TxPowerStart", DoubleValue (20.0));//
-  wifiPhy.Set ("TxPowerEnd", DoubleValue (20.0));//
-  wifiPhy.Set ("TxPowerLevels", UintegerValue (1));//
-  wifiPhy.Set ("TxGain", DoubleValue (0));//
-  wifiPhy.Set ("RxGain", DoubleValue (0));//
+  //wifiPhy.Set ("TxPowerStart", DoubleValue (20.0));//
+  //wifiPhy.Set ("TxPowerEnd", DoubleValue (20.0));//
+  //wifiPhy.Set ("TxPowerLevels", UintegerValue (1));//
+  //wifiPhy.Set ("TxGain", DoubleValue (0));//
+  //wifiPhy.Set ("RxGain", DoubleValue (0));//
   wifiPhy.SetErrorRateModel ("ns3::YansErrorRateModel");//
-  wifiPhy.SetChannel (wifiChannel);
+  wifiPhy.SetChannel (wifiChannel.Create ());
   wifiPhy.Set("ShortGuardEnabled", BooleanValue(shortGuardInterval));
   wifiPhy.Set("ChannelWidth",UintegerValue (20) );
-  //wifiPhy.Set ("Antennas", UintegerValue (4));
-  //wifiPhy.Set ("MaxSupportedTxSpatialStreams", UintegerValue (4));
-  //wifiPhy.Set ("MaxSupportedRxSpatialStreams", UintegerValue (4));
+  wifiPhy.Set ("Antennas", UintegerValue (4));
+  wifiPhy.Set ("MaxSupportedTxSpatialStreams", UintegerValue (4));
+  wifiPhy.Set ("MaxSupportedRxSpatialStreams", UintegerValue (4));
   // wifiPhy.Set ("RxAntennas", UintegerValue (4));
 
   /* Create Nodes */
@@ -211,11 +197,13 @@ main (int argc, char *argv[])
 
   /* Configure clients as STAs in the WLAN */
   NodeContainer staContainer;
+  staContainer.Add (serverNode);
   /* Begin at +2, because position 0 is the access point and position 1 is the server */
   for (NodeContainer::Iterator i = networkNodes.Begin () + 2; i != networkNodes.End (); ++i)
     {
       staContainer.Add (*i);
     }
+  
 
   /* Determin client nodes for object creation with client helper class */
   std::vector <std::pair <Ptr<Node>, std::string> > clients;
@@ -229,13 +217,13 @@ main (int argc, char *argv[])
     }
 
   /* Set up WAN link between server node and access point*/
-  PointToPointHelper p2p;
+  //PointToPointHelper p2p;
   //p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
-  p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(linkRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
-  p2p.SetDeviceAttribute ("Mtu", UintegerValue (1500));
-  p2p.SetChannelAttribute ("Delay", StringValue ("45ms"));
-  NetDeviceContainer wanIpDevices;
-  wanIpDevices = p2p.Install (serverNode, apNode);
+  //p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(linkRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
+  //p2p.SetDeviceAttribute ("Mtu", UintegerValue (1500));
+  //p2p.SetChannelAttribute ("Delay", StringValue ("45ms"));
+  //NetDeviceContainer wanIpDevices;
+  //wanIpDevices = p2p.Install (serverNode, apNode);
 
   /* create MAC layers */
   WifiMacHelper wifiMac;
@@ -276,13 +264,14 @@ main (int argc, char *argv[])
   Ipv4AddressHelper address;
 
   /* IPs for WAN */
-  address.SetBase ("76.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer wanInterface = address.Assign (wanIpDevices);
-  Address serverAddress = Address(wanInterface.GetAddress (0));
+  //address.SetBase ("76.1.1.0", "255.255.255.0");
+  //Ipv4InterfaceContainer wanInterface = address.Assign (wanIpDevices);
+  //Address serverAddress = Address(wanInterface.GetAddress (0));
 
   /* IPs for WLAN (STAs and AP) */
   address.SetBase ("192.168.1.0", "255.255.255.0");
-  address.Assign (wlanDevices);
+  Ipv4InterfaceContainer wlanInterface = address.Assign (wlanDevices);
+  Address serverAddress = Address(wlanInterface.GetAddress (0));
 
   /* Populate routing table */
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
@@ -359,11 +348,7 @@ main (int argc, char *argv[])
 
   if (moving) {
     //mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Bounds", RectangleValue (Rectangle ( 0.0, xRooms * roomWidth, 0.0, yRooms * roomLength)));
-    mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-                            "Mode", StringValue ("Time"),
-                             "Time", StringValue ("2s"),
-                             "Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
-                              "Bounds", StringValue("0|30|0|18"));
+    mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Distance", StringValue("5"), "Bounds", StringValue("0|30|0|18"));
   } else {;
     mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   }
@@ -379,11 +364,6 @@ main (int argc, char *argv[])
 
   // if logging of the packets between AP---Server or AP and the STAs is wanted, these two lines can be activated
 
-  //AsciiTraceHelper ascii;
-  //MobilityHelper::EnableAsciiAll (ascii.CreateFileStream ("mobility-trace-example.mob"));
-
-
-  p2p.EnablePcapAll ("p2p-", true);
   wifiPhy.EnablePcapAll ("wifi-", true);
 
    for (uint i = 0; i < numberOfClients; i++)
@@ -397,15 +377,7 @@ main (int argc, char *argv[])
 
     }
 
-  FlowMonitorHelper flowmon;
-  Ptr<FlowMonitor> monitor;
-  monitor = flowmon.Install(networkNodes);
 
-  wanIpDevices.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
-
-
-
- 
 
 
   /* Install TCP Receiver on the access point */
@@ -421,48 +393,14 @@ main (int argc, char *argv[])
   ApplicationContainer clientApps = clientHelper.Install (clients, openGymInterface);
   for (uint i = 0; i < clientApps.GetN (); i++)
     {
-      double startTime = 2.0 + ((i * 3) / 10.0 );
+      double startTime = 2.0 + ((i * 3) / 10.0);
       clientApps.Get (i)->SetStartTime (Seconds (startTime));
     }
 
-  
-  Simulator::Schedule (Seconds(25.0), 
-    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
-    StringValue (ToString(linkRate * (1 - 0.875)) +"kb/s"));
-  Simulator::Schedule (Seconds(50.0), 
-    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
-    StringValue (ToString(linkRate * (1 - 0.5)) +"kb/s"));
-  Simulator::Schedule (Seconds(75.0), 
-    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
-    StringValue (ToString(linkRate * (1 - 0.75)) +"kb/s"));
-  Simulator::Schedule (Seconds(100.0), 
-    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
-    StringValue (ToString(linkRate * (1 - 0.0)) +"kb/s"));
-  
-  
 
   NS_LOG_INFO ("Run Simulation.");
   NS_LOG_INFO ("Sim: " << simulationId << "Clients: " << numberOfClients);
   Simulator::Run ();
-
-
-  
-  monitor->CheckForLostPackets ();
-  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-  std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
-  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
-  {
-    Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-    std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
-    std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
-    std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
-    std::cout << "  Goodput: " << i->second.rxBytes * 8.0 / 5.0 / (1024*1024) << " Mbps\n";
-    std::cout << "  Packet Loss Ratio: " << (i->second.txPackets - i->second.rxPackets)*100/(double)i->second.txPackets << " %\n";
-    //std::cout << "  Packet Dropped: " << i->second.packetsDropped  << "%\n";
-    std::cout << "  mean Delay: " << i->second.delaySum.GetSeconds()*1000/i->second.rxPackets << " ms\n";
-    std::cout << "  mean Jitter: " << i->second.jitterSum.GetSeconds()*1000/(i->second.rxPackets - 1) << " ms\n";
-    std::cout << "  mean Hop count: " << 1 + i->second.timesForwarded/(double)i->second.rxPackets << "\n";
-  }
 
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");

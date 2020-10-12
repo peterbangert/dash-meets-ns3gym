@@ -5,19 +5,27 @@
 ##
 
 ## SegmentSize.txt as part of dash-meets-ns3gym module
-segmentSizeFile: "contrib/dash-meets-ns3gym/segmentSizes48.txt"
+#
+# contrib/dash-meets-ns3gym/segmentSizes48.txt
+# contrib/dash-meets-ns3gym/segmentSizes64.txt
+# contrib/dash-meets-ns3gym/segmentSizes.txt
+#segmentSizeFile: "contrib/dash-meets-ns3gym/enviodash96.txt"
+segmentSizeFile: "contrib/dash-meets-ns3gym/segmentSizes100.txt"
+#segmentSizeFile: "contrib/dash-meets-ns3gym/segmentSizes64.txt"
+#segmentSizeFile: "contrib/dash-meets-ns3gym/segmentsizelowbitrate.txt"
 
 ## Decide whether clients should randomly move around building
 moving: 0
 
 ## Bitrate between server and access point (kb/s)
-bitRate: 6000
+linkRate: 2000
+#wifiRate: 1
 
 ## Time and percentage amount of when throughput from server to AP should change
-firstThroughputChange: 0.5
-firstThroughputChangeTime: 50.0
-secondThroughputChange: 0.0
-secondThroughputChangeTime: 100.0 
+#firstThroughputChange: 0.75
+#firstThroughputChangeTime: 30.0
+#secondThroughputChange: 0.0
+#secondThroughputChangeTime: 75.0 
 
 ## Adaptation Algo
 ## random, festive, panda, tobasco
@@ -27,8 +35,9 @@ tobascoClients: 0
 ns3gymClients: 1
 
 ## Segment Duration
-segmentDuration: 5000000
+segmentDuration: 2000000
 
 ## Simulation ID
 ##  useful for organizing results
 simulationId: 1
+

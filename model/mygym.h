@@ -18,7 +18,8 @@ public:
 	MyGymEnv ( const videoData &videoData,
              const playbackData & playbackData,
 			 const bufferData & bufferData,
-			 const throughputData & throughput);
+			 const throughputData & throughput,
+			 Ptr<OpenGymInterface> openGymInterface);
 
 	algorithmReply GetNextRep ( const int64_t segmentCounter, int64_t clientId);
 
@@ -36,11 +37,12 @@ public:
 	
 	
 
-	uint32_t openGymPort = 5555;
-	Ptr<OpenGymInterface> openGymInterface;
+	//uint32_t openGymPort = 5555;
+	//Ptr<OpenGymInterface> openGymInterface;
 	
 private:
 	
+	int64_t m_clientId;
 	int64_t m_repindex;
 	int64_t m_downloadDelay;
 	int64_t m_reward;  

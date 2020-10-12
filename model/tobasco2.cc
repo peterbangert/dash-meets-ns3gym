@@ -34,7 +34,7 @@ TobascoAlgorithm::TobascoAlgorithm (  const videoData &videoData,
   m_a3 (0.5),
   m_a4 (0.75),
   m_a5 (0.9),
-  m_bMin (5000000),
+  m_bMin (1000000),
   m_bLow (20000000),
   m_bHigh (40000000),
   m_bOpt ((int64_t)(0.5 * (m_bLow + m_bHigh))),
@@ -68,17 +68,23 @@ TobascoAlgorithm::GetNextRep ( const int64_t segmentCounter, int64_t clientId)
       double nextHighestRepBitrate;
       if (m_lastRepIndex < m_highestRepIndex)
         {
-          nextHighestRepBitrate = (8.0 * m_videoData.averageBitrate.at (m_lastRepIndex + 1)) / timeFactor;
+          //nextHighestRepBitrate = (8.0 * m_videoData.averageBitrate.at (m_lastRepIndex + 1)) / timeFactor;
+          nextHighestRepBitrate = (m_videoData.averageBitrate.at (m_lastRepIndex + 1));
         }
       else
         {
-          nextHighestRepBitrate = (8.0 * m_videoData.averageBitrate.at (m_lastRepIndex)) / timeFactor;
-        }
+          //nextHighestRepBitrate = (8.0 * m_videoData.averageBitrate.at (m_lastRepIndex)) / timeFactor;
+          nextHighestRepBitrate = (m_videoData.averageBitrate.at (m_lastRepIndex ));
 
+        }
+      //bool thing = ((8.0 * m_videoData.averageBitrate.at (m_lastRepIndex)) / timeFactor <= m_a1 * averageSegmentThroughput);
+      //bool thing = (m_videoData.averageBitrate.at (m_lastRepIndex)  <= m_a1 * averageSegmentThroughput);
+      //NS_LOG_UNCOND(thing);
+     
       if (m_runningFastStart
           && m_lastRepIndex != m_highestRepIndex
           && MinimumBufferLevelObserved ()
-          && ((8.0 * m_videoData.averageBitrate.at (m_lastRepIndex)) / timeFactor <= m_a1 * averageSegmentThroughput))
+          && (( m_videoData.averageBitrate.at (m_lastRepIndex)) <= m_a1 * averageSegmentThroughput))
         {
           /* --------- running fast start phase --------- */
           if (bufferNow < m_bMin)
@@ -165,7 +171,8 @@ TobascoAlgorithm::GetNextRep ( const int64_t segmentCounter, int64_t clientId)
                   bDelay = (int64_t)(std::max (bufferNow - m_videoData.segmentDuration, m_bOpt));
                 }
               else
-                {
+                { 
+                  NS_LOG_UNCOND("here : " << averageSegmentThroughput);
                   decisionCase = 6;
                   nextRepIndex = m_lastRepIndex + 1;
                 }
@@ -289,4 +296,3 @@ TobascoAlgorithm::AverageSegmentThroughput (int64_t t_1, int64_t t_2)
 
 }
 } // namespace ns3
-

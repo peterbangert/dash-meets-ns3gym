@@ -45,6 +45,7 @@ private:
   const double m_thrptThrsh;
   const int64_t m_k;
   std::vector<int> m_smooth;
+  std::vector<int> m_indices;
 };
 
 } // namespace ns3

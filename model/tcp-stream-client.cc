@@ -44,6 +44,7 @@
 #include <sys/stat.h>
 #include <cstring>
 #include <errno.h>
+#include "ns3/core-module.h"
 
 namespace ns3 {
 
@@ -235,7 +236,7 @@ TcpStreamClient::TcpStreamClient ()
 }
 
 void
-TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
+TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId, Ptr<OpenGymInterface> openGymInterface)
 {
   NS_LOG_FUNCTION (this);
   m_videoData.segmentDuration = m_segmentDuration;
@@ -261,7 +262,8 @@ TcpStreamClient::Initialise (std::string algorithm, uint16_t clientId)
     }
   else if (algorithm == "ns3gym")
     {
-      algo = new MyGymEnv (m_videoData, m_playbackData, m_bufferData, m_throughput);
+      algo = new MyGymEnv (m_videoData, m_playbackData, m_bufferData, m_throughput, openGymInterface );
+      
     }
   else
     {
@@ -366,7 +368,9 @@ TcpStreamClient::ReadInBitrateValues (std::string segmentSizeFile)
                                  std::istream_iterator<int64_t>());
       m_videoData.segmentSize.push_back (line);
       averageByteSizeTemp = (int64_t) std::accumulate ( line.begin (), line.end (), 0.0) / line.size ();
-      m_videoData.averageBitrate.push_back ((8.0 * averageByteSizeTemp) / (m_videoData.segmentDuration / 1000000.0));
+      int64_t br = (8.0 * averageByteSizeTemp) / (m_videoData.segmentDuration / 1000000.0);
+      NS_LOG_UNCOND(br);
+      m_videoData.averageBitrate.push_back (br);
     }
   NS_ASSERT_MSG (!m_videoData.segmentSize.empty (), "No segment sizes read from file.");
   return 1;
@@ -476,6 +480,13 @@ TcpStreamClient::DoDispose (void)
   Application::DoDispose ();
 }
 
+static void
+CwndChange (uint32_t oldCwnd, uint32_t newCwnd)
+{
+  NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd << "   client");
+}
+
+
 void
 TcpStreamClient::StartApplication (void)
 {
@@ -496,6 +507,8 @@ TcpStreamClient::StartApplication (void)
         MakeCallback (&TcpStreamClient::ConnectionSucceeded, this),
         MakeCallback (&TcpStreamClient::ConnectionFailed, this));
       m_socket->SetRecvCallback (MakeCallback (&TcpStreamClient::HandleRead, this));
+      m_socket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&TcpStreamClient::LogCongestionWindow, this));
+      m_socket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&CwndChange));
     }
 }
 
@@ -568,10 +581,21 @@ TcpStreamClient::LogObservedThroughput ()
 {
   NS_LOG_FUNCTION (this);
   double throughput = (8.0 * m_throughput.bytesReceived.back() * 0.000001)
-                                        / ((double)((m_throughput.transmissionEnd.back() - m_throughput.transmissionStart.back()) / 1000000.0));
+                                        / ((double)((m_throughput.transmissionEnd.back() - m_throughput.transmissionRequested.back()) / 1000000.0));
+  double rtt = (m_throughput.transmissionStart.back() - m_throughput.transmissionRequested.back()) / 1000.0;
   observedThroughputLog << std::setfill (' ') << std::setw (13) << Simulator::Now ().GetMicroSeconds ()  / (double) 1000000 << " "
-                << std::setfill (' ') << std::setw (13) << throughput << "\n";
+                << std::setfill (' ') << std::setw (13) << throughput 
+                << std::setfill (' ') << std::setw (13) << rtt << "\n";
   observedThroughputLog.flush ();
+}
+
+void
+TcpStreamClient::LogCongestionWindow (uint32_t oldCwnd, uint32_t newCwnd)
+{
+  NS_LOG_FUNCTION (this);
+  congestionWindowLog << std::setfill (' ') << std::setw (13)  << Simulator::Now ().GetSeconds () 
+  << std::setfill (' ') << std::setw (13)  << newCwnd ;
+  congestionWindowLog.flush ();
 }
 
 void
@@ -653,13 +677,19 @@ TcpStreamClient::InitializeLogFiles (std::string simulationId, std::string clien
 
   std::string otLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "observedThroughputLog.txt";
   observedThroughputLog.open (otLog.c_str ());
-  observedThroughputLog << "     Time_Now Observed Throughput \n";
+  observedThroughputLog << "     Time_Now Observed Throughput rtt \n";
   observedThroughputLog.flush ();
 
   std::string buLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "bufferUnderrunLog.txt";
   bufferUnderrunLog.open (buLog.c_str ());
   bufferUnderrunLog << ("Buffer_Underrun_Started_At         Until \n");
   bufferUnderrunLog.flush ();
+
+  std::string cwndLog = dashLogDirectory + m_algoName + "/" +  numberOfClients  + "/sim" + simulationId + "_" + "cl" + clientId + "_"  + "congestionWindowLog.txt";
+  congestionWindowLog.open (cwndLog.c_str ());
+  congestionWindowLog << "     Time_Now cwnd \n";
+  congestionWindowLog.flush ();
+
 }
 
 } // Namespace ns3

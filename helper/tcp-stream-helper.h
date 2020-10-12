@@ -26,6 +26,7 @@
 #include "ns3/object-factory.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/ipv6-address.h"
+#include "ns3/opengym-module.h"
 
 namespace ns3 {
 
@@ -148,7 +149,7 @@ public:
    *
    * \returns the applications created, one application per input node.
    */
-  ApplicationContainer Install (std::vector <std::pair <Ptr<Node>, std::string> > clients) const;
+  ApplicationContainer Install (std::vector <std::pair <Ptr<Node>, std::string> > clients, Ptr<OpenGymInterface> openGymInterface) const;
 
 private:
   /**
@@ -161,7 +162,7 @@ private:
    * \param simulationId distinguish this simulation from other subsequently started simulations, for logging purposes
    * \returns Ptr to the application installed.
    */
-  Ptr<Application> InstallPriv (Ptr<Node> node, std::string algo, uint16_t clientId) const;
+  Ptr<Application> InstallPriv (Ptr<Node> node, std::string algo, uint16_t clientId, Ptr<OpenGymInterface> openGymInterface) const;
   ObjectFactory m_factory; //!< Object factory.
 };
 

@@ -16,6 +16,7 @@ playbackStart: []
 
 # Segment Counter
 segmentCounter: 0
+clientId: 0
 
 ## Training Parameters
 epsilon : 1.0               # exploration rate
