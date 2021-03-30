@@ -10,8 +10,7 @@ def build(bld):
         'model/festive.cc',
         'model/panda.cc',
         'model/tobasco2.cc',
-        'model/rl-algorithm.cc',
-        'ns3gym/mygym.cc',
+        'model/mygym.cc',
         'helper/tcp-stream-helper.cc',
         ]
 
@@ -25,8 +24,7 @@ def build(bld):
         'model/festive.h',
         'model/panda.h',
         'model/tobasco2.h',
-        'model/rl-algorithm.h',
-        'ns3gym/mygym.h',
+        'model/mygym.h',
         'helper/tcp-stream-helper.h',
         ]
 

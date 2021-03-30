@@ -76,6 +76,14 @@ TcpStreamServer::DoDispose (void)
   Application::DoDispose ();
 }
 
+static void
+CwndChange (uint32_t oldCwnd, uint32_t newCwnd)
+{
+  NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd  << "   server");
+}
+
+
+
 void
 TcpStreamServer::StartApplication (void)
 {
@@ -105,6 +113,7 @@ TcpStreamServer::StartApplication (void)
   m_socket->SetCloseCallbacks (
     MakeCallback (&TcpStreamServer::HandlePeerClose, this),
     MakeCallback (&TcpStreamServer::HandlePeerError, this));
+  m_socket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&CwndChange));
 }
 
 void

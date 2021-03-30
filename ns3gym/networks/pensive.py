@@ -61,7 +61,7 @@ def get_chunk_size(quality, index):
 
 def env_init():
     startSim = 0
-    port = 5555;
+    port = 5555
     simTime = 20 # seconds
     stepTime = 1.0  # seconds
     seed = 0
