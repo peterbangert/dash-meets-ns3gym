@@ -1,0 +1,86 @@
+
+# Throughput Data
+transmissionRequested: []
+transmissionStart: []
+transmissionEnd: []
+bytesReceived: []
+
+# Buffer Data
+timeNow: []
+bufferLevelOld: []
+bufferLevelNew: []
+
+# Playback Data
+playbackIndex: []
+playbackStart: []
+
+# Segment Counter
+segmentCounter: 0
+clientId: 0
+
+## Training Parameters
+epsilon : 1.0               # exploration rate
+epsilon_min : 0.01
+epsilon_decay : 0.999
+actionHistory : []
+actionHistoryAnimation : []
+throughputHistory : []
+
+# Number of total chunks of video                   
+total_video_chunks: 64
+left_chunks: 64
+# 2d array of segments sizes, by quality
+#   VIDEO_SIZES[n][m], n quaity, m segment
+video_sizes: null
+# Bitrates of Qualities
+# Low 240p, Low 360p, Medium 480p, HD 720p, HD1080 1080p, Quad HD 1440p, 4k 2160p, 8k 4320p
+video_bitrate: # Kbps
+  - 300
+  - 750
+  - 1200
+  - 1850
+  - 2850
+  - 4300
+  - 8000
+  - 15000 
+bitrate_reward_map:
+  0: 0
+  300: 1
+  750: 2 
+  1200: 3 
+  1850: 12
+  2850: 15
+  4300: 20
+  8000: 25
+  15000: 30
+default_quality: 0  # default video quality without agent
+rebuffer_penalty: 4.3  # 1 sec rebuffering -> this number of Mbps
+smooth_penalty: 1
+
+# simulation_parameters
+startSim: 0
+port: 5555
+simTime: 20 # seconds
+stepTime: 1.0  # seconds
+seed: 0
+simArgs: "{\"--simTime\": simTime,\"--testArg\": 123}"
+debug: False
+
+
+## Network Choice
+##  choose between simple-nn, pensive, or your own network.
+network: pensive
+
+
+## NN parameters
+## Episode, amount of itmes ns3 simulation will be reinitialized.
+##   increase when NN training 
+## Save/Load model, save the trained weights of NN 
+## please indicate filename to save/load model weights as
+episodes: 1
+save_model: False
+load_model: False
+
+
+## Create mp4 Video of simulation
+animate: False

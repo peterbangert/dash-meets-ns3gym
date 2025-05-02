@@ -37,9 +37,9 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/tcp-stream-helper.h"
 #include "ns3/tcp-stream-interface.h"
-
-
-
+#include "ns3/traffic-control-module.h"
+#include "ns3/opengym-module.h"
+#include "ns3/csma-module.h"
 
 template <typename T>
 std::string ToString(T val)
@@ -52,6 +52,17 @@ std::string ToString(T val)
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("TcpStreamExample");
+
+void
+CourseChange (std::string context, Ptr<const MobilityModel> model)
+{
+  Vector position = model->GetPosition ();
+  NS_LOG_UNCOND (context << " time : " << Now().GetSeconds()  <<
+    " x = " << position.x << ", y = " << position.y);
+}
+
+
+
 
 int
 main (int argc, char *argv[])
@@ -66,46 +77,99 @@ main (int argc, char *argv[])
 //   LogComponentEnable ("TcpStreamServerApplication", LOG_LEVEL_INFO);
 // #endif
 
-  uint64_t segmentDuration;
+  uint64_t segmentDuration = 2000000;
   // The simulation id is used to distinguish log file results from potentially multiple consequent simulation runs.
-  uint32_t simulationId;
-  uint32_t numberOfClients;
-  std::string adaptationAlgo;
-  std::string segmentSizeFilePath;
-  uint32_t bitRate;
+  uint32_t simulationId = 1;
+  
+  uint32_t pandaClients = 0;
+  uint32_t festiveClients = 0;
+  uint32_t tobascoClients = 0;
+  uint32_t ns3gymClients = 0;
+
+  float firstThroughputChange = 0.0;
+  float firstThroughputChangeTime = 40.0;
+  float secondThroughputChange = 0.0;
+  float secondThroughputChangeTime = 80.0;
+
+  uint32_t openGymPort = 5555;
+  Ptr<OpenGymInterface> openGymInterface;
+ 
+  bool moving = false;
+
+  std::string adaptationAlgo = "ns3gym";
+  std::string segmentSizeFilePath = "contrib/dash-meets-ns3gym/segmentSizes.txt";
+  uint32_t linkRate = 100000;
+  uint32_t wifiRate = 0;
   bool shortGuardInterval = true;
 
   CommandLine cmd;
   cmd.Usage ("Simulation of streaming with DASH.\n");
   cmd.AddValue ("simulationId", "The simulation's index (for logging purposes)", simulationId);
-  cmd.AddValue ("numberOfClients", "The number of clients", numberOfClients);
+
+  cmd.AddValue ("pandaClients", "The number of Panda clients", pandaClients);
+  cmd.AddValue ("festiveClients", "The number of Festive clients", festiveClients);
+  cmd.AddValue ("tobascoClients", "The number of Tobasco clients", tobascoClients);
+  cmd.AddValue ("ns3gymClients", "The number of Ns3gym clients", ns3gymClients);
+
+  cmd.AddValue ("moving", "Moving or Stationary", moving);
+
+  cmd.AddValue ("firstThroughputChange", "Percentage throughput change", firstThroughputChange);
+  cmd.AddValue ("firstThroughputChangeTime", "Time (s) of first throughput change", firstThroughputChangeTime);
+  cmd.AddValue ("secondThroughputChange", "Percentage throughput change", secondThroughputChange);
+  cmd.AddValue ("secondThroughputChangeTime", "Time (s) of first throughput change", secondThroughputChangeTime);
+
   cmd.AddValue ("segmentDuration", "The duration of a video segment in microseconds", segmentDuration);
-  cmd.AddValue ("adaptationAlgo", "The adaptation algorithm that the client uses for the simulation", adaptationAlgo);
   cmd.AddValue ("segmentSizeFile", "The relative path (from ns-3.x directory) to the file containing the segment sizes in bytes", segmentSizeFilePath);
-  cmd.AddValue ("bitRate", "Traffic speed from server", bitRate);
+  cmd.AddValue ("linkRate", "Traffic speed from server", linkRate);
+  cmd.AddValue ("wifiRate", "Traffic speed from server", wifiRate);
+  
   cmd.Parse (argc, argv);
 
+  std::string temp;  
+  //vector<string> adaptationAlgos;
+  std::vector<std::string> adaptationAlgos; ///< list of attributes
+  
+  
+  for (uint i =0; i < pandaClients; i++) {
+      adaptationAlgos.push_back("panda");
+  }
+  for (uint i =0; i < festiveClients; i++) {
+      adaptationAlgos.push_back("festive");
+  }
+  for (uint i =0; i < tobascoClients; i++) {
+      adaptationAlgos.push_back("tobasco");
+  }
+  for (uint i =0; i < ns3gymClients; i++) {
+      adaptationAlgos.push_back("ns3gym");
+  }
+  
+  if (ns3gymClients > 0) {
+      openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
+  }
+  
 
+  uint32_t numberOfClients = ns3gymClients + tobascoClients + festiveClients + pandaClients;
+
+  
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
   //Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
   //Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
+  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpNewReno"));
 
-  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (124288));
-  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (124288));
 
   WifiHelper wifiHelper;
-
-  //Contraining the Network for testing purposes
-  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
-  
-  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
-
-
-  wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
+  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
+  //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211b);
+  if (wifiRate == 0 ) {
+    wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
+  } else {
+    wifiHelper.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("HtMcs24"));
+  }
 
 
   /* Set up Legacy Channel */
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+  
   // We do not set an explicit propagation loss model here, we just use the default ones that get applied with the building model.
 
   /* Setup Physical Layer */
@@ -119,41 +183,62 @@ main (int argc, char *argv[])
   wifiPhy.SetErrorRateModel ("ns3::YansErrorRateModel");//
   wifiPhy.SetChannel (wifiChannel.Create ());
   wifiPhy.Set("ShortGuardEnabled", BooleanValue(shortGuardInterval));
+  wifiPhy.Set("ChannelWidth",UintegerValue (20) );
   wifiPhy.Set ("Antennas", UintegerValue (4));
+  wifiPhy.Set ("MaxSupportedTxSpatialStreams", UintegerValue (4));
+  wifiPhy.Set ("MaxSupportedRxSpatialStreams", UintegerValue (4));
   // wifiPhy.Set ("RxAntennas", UintegerValue (4));
 
   /* Create Nodes */
-  NodeContainer networkNodes;
-  networkNodes.Create (numberOfClients + 2);
+  NodeContainer clientNodes;
+  clientNodes.Create (numberOfClients );
 
   /* Determin access point and server node */
-  Ptr<Node> apNode = networkNodes.Get (0);
-  Ptr<Node> serverNode = networkNodes.Get (1);
+  NodeContainer p2pNodes;
+  p2pNodes.Create (2);
+  Ptr<Node> apNode = p2pNodes.Get (0);
+
+  NodeContainer csmaNodes;
+  csmaNodes.Add (p2pNodes.Get (1));
+  csmaNodes.Create (numberOfClients);
+
+  CsmaHelper csma;
+  csma.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
+  csma.SetChannelAttribute ("Delay", TimeValue (NanoSeconds (6560)));
+
+  NetDeviceContainer csmaDevices;
+  csmaDevices = csma.Install (csmaNodes);
+
 
   /* Configure clients as STAs in the WLAN */
   NodeContainer staContainer;
   /* Begin at +2, because position 0 is the access point and position 1 is the server */
-  for (NodeContainer::Iterator i = networkNodes.Begin () + 2; i != networkNodes.End (); ++i)
+  for (NodeContainer::Iterator i = clientNodes.Begin () ; i != clientNodes.End (); ++i)
     {
       staContainer.Add (*i);
     }
 
   /* Determin client nodes for object creation with client helper class */
   std::vector <std::pair <Ptr<Node>, std::string> > clients;
-  for (NodeContainer::Iterator i = networkNodes.Begin () + 2; i != networkNodes.End (); ++i)
+  int algoIndex = 0;
+  for (NodeContainer::Iterator i = clientNodes.Begin () ; i != clientNodes.End (); ++i)
     {
-      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgo);
+      
+      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgos.at(algoIndex) );
       clients.push_back (client);
+      algoIndex ++;
     }
 
   /* Set up WAN link between server node and access point*/
   PointToPointHelper p2p;
-
-  p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(bitRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
+  //p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
+  p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(linkRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
   p2p.SetDeviceAttribute ("Mtu", UintegerValue (1500));
   p2p.SetChannelAttribute ("Delay", StringValue ("45ms"));
   NetDeviceContainer wanIpDevices;
-  wanIpDevices = p2p.Install (serverNode, apNode);
+  wanIpDevices = p2p.Install (p2pNodes);
+
+
 
   /* create MAC layers */
   WifiMacHelper wifiMac;
@@ -173,7 +258,6 @@ main (int argc, char *argv[])
   apDevice = wifiHelper.Install (wifiPhy, wifiMac, apNode);
 
 
-
   Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/ChannelWidth", UintegerValue (40));
 
   /* Determin WLAN devices (AP and STAs) */
@@ -183,7 +267,10 @@ main (int argc, char *argv[])
 
   /* Internet stack */
   InternetStackHelper stack;
-  stack.Install (networkNodes);
+  stack.Install (clientNodes);
+  stack.Install (apNode);
+  stack.Install (csmaNodes);
+
 
   /* Assign IP addresses */
   Ipv4AddressHelper address;
@@ -191,7 +278,11 @@ main (int argc, char *argv[])
   /* IPs for WAN */
   address.SetBase ("76.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer wanInterface = address.Assign (wanIpDevices);
-  Address serverAddress = Address(wanInterface.GetAddress (0));
+  
+
+  address.SetBase ("10.1.2.0", "255.255.255.0");
+  Ipv4InterfaceContainer csmaInterfaces;
+  csmaInterfaces = address.Assign (csmaDevices);
 
   /* IPs for WLAN (STAs and AP) */
   address.SetBase ("192.168.1.0", "255.255.255.0");
@@ -254,6 +345,7 @@ main (int argc, char *argv[])
   clientPosLog.open (clientPos.c_str());
   NS_ASSERT_MSG (clientPosLog.is_open(), "Couldn't open clientPosLog file");
 
+  NS_LOG_UNCOND("here");
   
   // allocate clients to positions
   for (uint i = 0; i < numberOfClients; i++)
@@ -269,40 +361,66 @@ main (int argc, char *argv[])
 
   MobilityHelper mobility;
   mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+  if (moving) {
+    //mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Bounds", RectangleValue (Rectangle ( 0.0, xRooms * roomWidth, 0.0, yRooms * roomLength)));
+    mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Distance", StringValue("5"), "Bounds", StringValue("0|30|0|18"));
+  } else {;
+    mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  }
+  
   // install all of the nodes that have been added to positionAlloc to the mobility model
-  mobility.Install (networkNodes);
-  BuildingsHelper::Install (networkNodes); // networkNodes contains all nodes, stations and ap
-  BuildingsHelper::MakeMobilityModelConsistent ();
+  mobility.Install (staContainer);
+
+  NS_LOG_UNCOND("here");
+
+  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  mobility.Install (apNode);
+  //BuildingsHelper::Install (clientNodes); // networkNodes contains all nodes, stations and ap
+  //BuildingsHelper::MakeMobilityModelConsistent ();
 
   // if logging of the packets between AP---Server or AP and the STAs is wanted, these two lines can be activated
 
-  // p2p.EnablePcapAll ("p2p-", true);
-  // wifiPhy.EnablePcapAll ("wifi-", true);
+  p2p.EnablePcapAll ("p2p-", true);
+  wifiPhy.EnablePcapAll ("wifi-", true);
 
+  NS_LOG_UNCOND("here");
 
-
-  /* Install TCP Receiver on the access point */
   TcpStreamServerHelper serverHelper (port);
-  ApplicationContainer serverApp = serverHelper.Install (serverNode);
-  serverApp.Start (Seconds (1.0));
+  ApplicationContainer serverApps;
+  for (uint i = 0; i < numberOfClients; i++)
+    {
+      serverApps.Add(serverHelper.Install (csmaNodes.Get(i+1)));
+      serverApps.Get(i)->SetStartTime (Seconds (1.0));
+    }
+  NS_LOG_UNCOND("here");
+
   /* Install TCP/UDP Transmitter on the station */
-  TcpStreamClientHelper clientHelper (serverAddress, port);
+  TcpStreamClientHelper clientHelper (Address(csmaInterfaces.GetAddress (1)), port);
   clientHelper.SetAttribute ("SegmentDuration", UintegerValue (segmentDuration));
   clientHelper.SetAttribute ("SegmentSizeFilePath", StringValue (segmentSizeFilePath));
   clientHelper.SetAttribute ("NumberOfClients", UintegerValue(numberOfClients));
   clientHelper.SetAttribute ("SimulationId", UintegerValue (simulationId));
-  ApplicationContainer clientApps = clientHelper.Install (clients);
+  ApplicationContainer clientApps = clientHelper.Install (clients, openGymInterface);
   for (uint i = 0; i < clientApps.GetN (); i++)
-    {
-      double startTime = 2.0 + ((i * 3) / 100.0);
+    {      
+      double startTime = 2.0 + ((i * 3) / 15.0);
       clientApps.Get (i)->SetStartTime (Seconds (startTime));
+      clientApps.Get (i)->SetAttribute("RemoteAddress", AddressValue (Address(csmaInterfaces.GetAddress (i+1))));
     }
+
+  Simulator::Schedule (Seconds(firstThroughputChangeTime), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - firstThroughputChange)) +"kb/s"));
+  Simulator::Schedule (Seconds(secondThroughputChangeTime), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - secondThroughputChange)) +"kb/s"));
 
 
   NS_LOG_INFO ("Run Simulation.");
   NS_LOG_INFO ("Sim: " << simulationId << "Clients: " << numberOfClients);
   Simulator::Run ();
+
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
 

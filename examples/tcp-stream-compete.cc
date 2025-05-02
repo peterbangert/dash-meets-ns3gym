@@ -37,9 +37,9 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/tcp-stream-helper.h"
 #include "ns3/tcp-stream-interface.h"
-
-
-
+#include "ns3/traffic-control-module.h"
+#include "ns3/opengym-module.h"
+#include "ns3/propagation-loss-model.h"
 
 template <typename T>
 std::string ToString(T val)
@@ -52,6 +52,22 @@ std::string ToString(T val)
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("TcpStreamExample");
+
+void
+CourseChange (std::string context, Ptr<const MobilityModel> model)
+{
+  Vector position = model->GetPosition ();
+  NS_LOG_UNCOND (context << " time : " << Now().GetSeconds()  <<
+    " x = " << position.x << ", y = " << position.y << ", z = " << position.z);
+}
+
+static void
+RxDrop (Ptr<const Packet> p)
+{
+  NS_LOG_UNCOND ("RxDrop at " << Simulator::Now ().GetSeconds ());
+}
+
+
 
 int
 main (int argc, char *argv[])
@@ -66,50 +82,106 @@ main (int argc, char *argv[])
 //   LogComponentEnable ("TcpStreamServerApplication", LOG_LEVEL_INFO);
 // #endif
 
-  uint64_t segmentDuration;
+  uint64_t segmentDuration = 2000000;
   // The simulation id is used to distinguish log file results from potentially multiple consequent simulation runs.
-  uint32_t simulationId;
-  uint32_t numberOfClients;
-  std::string adaptationAlgo;
-  std::string segmentSizeFilePath;
-  uint32_t interrupts;
+  uint32_t simulationId = 1;
+  
+  uint32_t pandaClients = 0;
+  uint32_t festiveClients = 0;
+  uint32_t tobascoClients = 0;
+  uint32_t ns3gymClients = 0;
 
+  float firstThroughputChange = 0.0;
+  float firstThroughputChangeTime = 40.0;
+  float secondThroughputChange = 0.0;
+  float secondThroughputChangeTime = 80.0;
+
+  uint32_t openGymPort = 5555;
+  Ptr<OpenGymInterface> openGymInterface;
+ 
+  bool moving = false;
+
+  std::string adaptationAlgo = "ns3gym";
+  std::string segmentSizeFilePath = "contrib/dash-meets-ns3gym/segmentSizes.txt";
+  uint32_t linkRate = 100000;
+  uint32_t wifiRate = 0;
   bool shortGuardInterval = true;
 
-
-NS_LOG_UNCOND("henlo");
   CommandLine cmd;
   cmd.Usage ("Simulation of streaming with DASH.\n");
   cmd.AddValue ("simulationId", "The simulation's index (for logging purposes)", simulationId);
-  cmd.AddValue ("numberOfClients", "The number of clients", numberOfClients);
+
+  cmd.AddValue ("pandaClients", "The number of Panda clients", pandaClients);
+  cmd.AddValue ("festiveClients", "The number of Festive clients", festiveClients);
+  cmd.AddValue ("tobascoClients", "The number of Tobasco clients", tobascoClients);
+  cmd.AddValue ("ns3gymClients", "The number of Ns3gym clients", ns3gymClients);
+
+  cmd.AddValue ("moving", "Moving or Stationary", moving);
+
+  cmd.AddValue ("firstThroughputChange", "Percentage throughput change", firstThroughputChange);
+  cmd.AddValue ("firstThroughputChangeTime", "Time (s) of first throughput change", firstThroughputChangeTime);
+  cmd.AddValue ("secondThroughputChange", "Percentage throughput change", secondThroughputChange);
+  cmd.AddValue ("secondThroughputChangeTime", "Time (s) of first throughput change", secondThroughputChangeTime);
+
   cmd.AddValue ("segmentDuration", "The duration of a video segment in microseconds", segmentDuration);
-  cmd.AddValue ("adaptationAlgo", "The adaptation algorithm that the client uses for the simulation", adaptationAlgo);
   cmd.AddValue ("segmentSizeFile", "The relative path (from ns-3.x directory) to the file containing the segment sizes in bytes", segmentSizeFilePath);
-  cmd.AddValue ("interrupts", "Number of udp clients interfering", interrupts);
+  cmd.AddValue ("linkRate", "Traffic speed from server", linkRate);
+  cmd.AddValue ("wifiRate", "Traffic speed from server", wifiRate);
+  
   cmd.Parse (argc, argv);
+  ns3::RngSeedManager::SetSeed(simulationId);
 
+  std::string temp;  
+  //vector<string> adaptationAlgos;
+  std::vector<std::string> adaptationAlgos; ///< list of attributes
+  
+  
+  for (uint i =0; i < pandaClients; i++) {
+      adaptationAlgos.push_back("panda");
+  }
+  for (uint i =0; i < festiveClients; i++) {
+      adaptationAlgos.push_back("festive");
+  }
+  for (uint i =0; i < tobascoClients; i++) {
+      adaptationAlgos.push_back("tobasco");
+  }
+  for (uint i =0; i < ns3gymClients; i++) {
+      adaptationAlgos.push_back("ns3gym");
+  }
+  
+  if (ns3gymClients > 0) {
+      openGymInterface = CreateObject<OpenGymInterface> (openGymPort);
+  }
+  
 
+  uint32_t numberOfClients = ns3gymClients + tobascoClients + festiveClients + pandaClients;
+
+  
   Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (1446));
   //Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (524288));
   //Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (524288));
+  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::TcpNewReno"));
 
-  Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (124288));
-  Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (124288));
 
   WifiHelper wifiHelper;
-
-  //Contraining the Network for testing purposes
   //wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
-  
-  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
-
-
-NS_LOG_UNCOND("henlo");
-  wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
+  wifiHelper.SetStandard (WIFI_PHY_STANDARD_80211a);
+  if (wifiRate == 0 ) {
+    wifiHelper.SetRemoteStationManager ("ns3::MinstrelHtWifiManager");//
+  } else {
+    wifiHelper.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("HtMcs24"));
+  }
 
 
   /* Set up Legacy Channel */
-  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+  
+  Ptr<YansWifiChannel> wifiChannel = CreateObject <YansWifiChannel> ();
+  Ptr<NakagamiPropagationLossModel> rssLossModel = CreateObject<NakagamiPropagationLossModel> ();
+
+  wifiChannel->SetPropagationLossModel (rssLossModel);
+  wifiChannel->SetPropagationDelayModel (CreateObject <ConstantSpeedPropagationDelayModel> ());
+
+  //YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
   // We do not set an explicit propagation loss model here, we just use the default ones that get applied with the building model.
 
   /* Setup Physical Layer */
@@ -121,22 +193,21 @@ NS_LOG_UNCOND("henlo");
   wifiPhy.Set ("TxGain", DoubleValue (0));//
   wifiPhy.Set ("RxGain", DoubleValue (0));//
   wifiPhy.SetErrorRateModel ("ns3::YansErrorRateModel");//
-  wifiPhy.SetChannel (wifiChannel.Create ());
+  wifiPhy.SetChannel (wifiChannel);
   wifiPhy.Set("ShortGuardEnabled", BooleanValue(shortGuardInterval));
-  wifiPhy.Set ("Antennas", UintegerValue (4));
+  wifiPhy.Set("ChannelWidth",UintegerValue (20) );
+  //wifiPhy.Set ("Antennas", UintegerValue (4));
+  //wifiPhy.Set ("MaxSupportedTxSpatialStreams", UintegerValue (4));
+  //wifiPhy.Set ("MaxSupportedRxSpatialStreams", UintegerValue (4));
   // wifiPhy.Set ("RxAntennas", UintegerValue (4));
 
-  /* Create Nodes +3 for interrupt node*/
+  /* Create Nodes */
   NodeContainer networkNodes;
-  networkNodes.Create (numberOfClients + interrupts);
+  networkNodes.Create (numberOfClients + 2);
 
   /* Determin access point and server node */
   Ptr<Node> apNode = networkNodes.Get (0);
   Ptr<Node> serverNode = networkNodes.Get (1);
-  //Ptr<Node> interruptNode = networkNodes.Get (2);
-
-
-NS_LOG_UNCOND("henlo");
 
   /* Configure clients as STAs in the WLAN */
   NodeContainer staContainer;
@@ -146,29 +217,21 @@ NS_LOG_UNCOND("henlo");
       staContainer.Add (*i);
     }
 
-
-NS_LOG_UNCOND("henlo");
-  
   /* Determin client nodes for object creation with client helper class */
   std::vector <std::pair <Ptr<Node>, std::string> > clients;
-  for (NodeContainer::Iterator i = networkNodes.Begin () +2+ interrupts; i != networkNodes.End (); ++i)
+  int algoIndex = 0;
+  for (NodeContainer::Iterator i = networkNodes.Begin () + 2; i != networkNodes.End (); ++i)
     {
-      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgo);
+      
+      std::pair <Ptr<Node>, std::string> client (*i, adaptationAlgos.at(algoIndex) );
       clients.push_back (client);
-    }
-
-NS_LOG_UNCOND("henlo");
-
-  /* Container for interrupting nodes */
-  NodeContainer interruptNodes;
-  for (NodeContainer::Iterator i = networkNodes.Begin () +2; i != networkNodes.End () - interrupts; ++i)
-    {
-      interruptNodes.Add(*i);   
+      algoIndex ++;
     }
 
   /* Set up WAN link between server node and access point*/
   PointToPointHelper p2p;
-  p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
+  //p2p.SetDeviceAttribute ("DataRate", StringValue ("100000kb/s")); // This must not be more than the maximum throughput in 802.11n
+  p2p.SetDeviceAttribute ("DataRate", StringValue (ToString(linkRate) +"kb/s")); // This must not be more than the maximum throughput in 802.11n
   p2p.SetDeviceAttribute ("Mtu", UintegerValue (1500));
   p2p.SetChannelAttribute ("Delay", StringValue ("45ms"));
   NetDeviceContainer wanIpDevices;
@@ -191,7 +254,6 @@ NS_LOG_UNCOND("henlo");
   NetDeviceContainer apDevice;
   apDevice = wifiHelper.Install (wifiPhy, wifiMac, apNode);
 
-NS_LOG_UNCOND("henlo");
 
 
   Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/ChannelWidth", UintegerValue (40));
@@ -204,6 +266,11 @@ NS_LOG_UNCOND("henlo");
   /* Internet stack */
   InternetStackHelper stack;
   stack.Install (networkNodes);
+
+  //TrafficControlHelper tch;
+  //uint16_t handle = tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc");
+  //tch.AddInternalQueues (handle, 3, "ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+  //QueueDiscContainer qdiscs = tch.Install (wanIpDevices);
 
   /* Assign IP addresses */
   Ipv4AddressHelper address;
@@ -252,7 +319,7 @@ NS_LOG_UNCOND("henlo");
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (posAp);
   positionAlloc->Add (posServer);
-NS_LOG_UNCOND("henlo");
+
 
   Ptr<RandomRoomPositionAllocator> randPosAlloc = CreateObject<RandomRoomPositionAllocator> ();
   randPosAlloc->AssignStreams (simulationId);
@@ -276,7 +343,7 @@ NS_LOG_UNCOND("henlo");
 
   
   // allocate clients to positions
-  for (uint i = 0; i < numberOfClients + interrupts; i++)
+  for (uint i = 0; i < numberOfClients; i++)
     {
       Vector pos = Vector (randPosAlloc->GetNext());
       positionAlloc->Add (pos);
@@ -285,23 +352,61 @@ NS_LOG_UNCOND("henlo");
       clientPosLog << ToString(pos.x) << ", " << ToString(pos.y) << ", " << ToString(pos.z) << "\n";
       clientPosLog.flush ();
     }
-NS_LOG_UNCOND("henlo");
+
 
   MobilityHelper mobility;
   mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+  if (moving) {
+    //mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Bounds", RectangleValue (Rectangle ( 0.0, xRooms * roomWidth, 0.0, yRooms * roomLength)));
+    mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+                            "Mode", StringValue ("Time"),
+                             "Time", StringValue ("2s"),
+                             "Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
+                              "Bounds", StringValue("0|30|0|18"));
+  } else {;
+    mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  }
+  
   // install all of the nodes that have been added to positionAlloc to the mobility model
-  mobility.Install (networkNodes);
+  mobility.Install (staContainer);
+
+  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  mobility.Install (apNode);
+  mobility.Install (serverNode);
   BuildingsHelper::Install (networkNodes); // networkNodes contains all nodes, stations and ap
   BuildingsHelper::MakeMobilityModelConsistent ();
 
   // if logging of the packets between AP---Server or AP and the STAs is wanted, these two lines can be activated
 
-  // p2p.EnablePcapAll ("p2p-", true);
-  // wifiPhy.EnablePcapAll ("wifi-", true);
+  //AsciiTraceHelper ascii;
+  //MobilityHelper::EnableAsciiAll (ascii.CreateFileStream ("mobility-trace-example.mob"));
 
-  
+
+  p2p.EnablePcapAll ("p2p-", true);
+  wifiPhy.EnablePcapAll ("wifi-", true);
+
+   for (uint i = 0; i < numberOfClients; i++)
+    {
+      std::ostringstream oss;
+      oss <<
+        "/NodeList/" << staContainer.Get (i)->GetId () <<
+        "/$ns3::MobilityModel/CourseChange";
+
+      Config::Connect (oss.str (), MakeCallback (&CourseChange));
+
+    }
+
+  FlowMonitorHelper flowmon;
+  Ptr<FlowMonitor> monitor;
+  monitor = flowmon.Install(networkNodes);
+
+  wanIpDevices.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
+
+
+
  
+
 
   /* Install TCP Receiver on the access point */
   TcpStreamServerHelper serverHelper (port);
@@ -313,44 +418,52 @@ NS_LOG_UNCOND("henlo");
   clientHelper.SetAttribute ("SegmentSizeFilePath", StringValue (segmentSizeFilePath));
   clientHelper.SetAttribute ("NumberOfClients", UintegerValue(numberOfClients));
   clientHelper.SetAttribute ("SimulationId", UintegerValue (simulationId));
-  ApplicationContainer clientApps = clientHelper.Install (clients);
+  ApplicationContainer clientApps = clientHelper.Install (clients, openGymInterface);
   for (uint i = 0; i < clientApps.GetN (); i++)
     {
-      double startTime = 2.0 + ((i * 3) / 100.0);
+      double startTime = 2.0 + ((i * 3) / 10.0 );
       clientApps.Get (i)->SetStartTime (Seconds (startTime));
     }
-/*
-  UdpClientHelper client (serverAddress, port);
-  client.SetAttribute ("MaxPackets", UintegerValue (20));
-  client.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  client.SetAttribute ("PacketSize", UintegerValue (1024));
 
-  ApplicationContainer apps = client.Install (interruptNodes);
-  double startTime = (double)rand() / 100.0;
-  apps.Start (Seconds (startTime));
-  apps.Stop (Seconds (startTime + 10.0));      
-*/
-    NS_LOG_UNCOND("henlo");
-
-  uint32_t payloadSize = 1448;
-  OnOffHelper onoff ("ns3::TcpSocketFactory", Ipv4Address::GetAny ());
-  onoff.SetAttribute ("OnTime",  StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  onoff.SetAttribute ("PacketSize", UintegerValue (payloadSize));
-  onoff.SetAttribute ("DataRate", DataRateValue (1000000000)); //bit/s
-  AddressValue remoteAddress (InetSocketAddress (wanInterface.GetAddress (0), port));
-  onoff.SetAttribute ("Remote", remoteAddress);
-  ApplicationContainer clientApp = onoff.Install (interruptNodes);
-  double startTime = (double)rand() / 100.0;
-  NS_LOG_UNCOND(startTime);
-  clientApp.Start (Seconds (startTime));
-  clientApp.Stop (Seconds (startTime + 10.0));  
-
-
+  
+  Simulator::Schedule (Seconds(25.0), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - 0.875)) +"kb/s"));
+  Simulator::Schedule (Seconds(50.0), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - 0.5)) +"kb/s"));
+  Simulator::Schedule (Seconds(75.0), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - 0.75)) +"kb/s"));
+  Simulator::Schedule (Seconds(100.0), 
+    Config::Set, "/NodeList/1/DeviceList/0/$ns3::PointToPointNetDevice/DataRate",
+    StringValue (ToString(linkRate * (1 - 0.0)) +"kb/s"));
+  
+  
 
   NS_LOG_INFO ("Run Simulation.");
   NS_LOG_INFO ("Sim: " << simulationId << "Clients: " << numberOfClients);
   Simulator::Run ();
+
+
+  
+  monitor->CheckForLostPackets ();
+  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+  std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
+  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+  {
+    Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+    std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
+    std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
+    std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
+    std::cout << "  Goodput: " << i->second.rxBytes * 8.0 / 5.0 / (1024*1024) << " Mbps\n";
+    std::cout << "  Packet Loss Ratio: " << (i->second.txPackets - i->second.rxPackets)*100/(double)i->second.txPackets << " %\n";
+    //std::cout << "  Packet Dropped: " << i->second.packetsDropped  << "%\n";
+    std::cout << "  mean Delay: " << i->second.delaySum.GetSeconds()*1000/i->second.rxPackets << " ms\n";
+    std::cout << "  mean Jitter: " << i->second.jitterSum.GetSeconds()*1000/(i->second.rxPackets - 1) << " ms\n";
+    std::cout << "  mean Hop count: " << 1 + i->second.timesForwarded/(double)i->second.rxPackets << "\n";
+  }
+
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
 

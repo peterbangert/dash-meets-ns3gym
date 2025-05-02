@@ -101,23 +101,23 @@ TcpStreamClientHelper::SetAttribute (std::string name, const AttributeValue &val
 }
 
 ApplicationContainer
-TcpStreamClientHelper::Install (std::vector <std::pair <Ptr<Node>, std::string> > clients) const
+TcpStreamClientHelper::Install (std::vector <std::pair <Ptr<Node>, std::string> > clients, Ptr<OpenGymInterface> openGymInterface) const
 {
   ApplicationContainer apps;
   for (uint i = 0; i < clients.size (); i++)
     {
-      apps.Add (InstallPriv (clients.at (i).first, clients.at (i).second, i));
+      apps.Add (InstallPriv (clients.at (i).first, clients.at (i).second, i,  openGymInterface));
     }
 
   return apps;
 }
 
 Ptr<Application>
-TcpStreamClientHelper::InstallPriv (Ptr<Node> node, std::string algo, uint16_t clientId) const
+TcpStreamClientHelper::InstallPriv (Ptr<Node> node, std::string algo, uint16_t clientId, Ptr<OpenGymInterface> openGymInterface) const
 {
   Ptr<Application> app = m_factory.Create<TcpStreamClient> ();
   app->GetObject<TcpStreamClient> ()->SetAttribute ("ClientId", UintegerValue (clientId));
-  app->GetObject<TcpStreamClient> ()->Initialise (algo, clientId);
+  app->GetObject<TcpStreamClient> ()->Initialise (algo, clientId,  openGymInterface);
   node->AddApplication (app);
   return app;
 }

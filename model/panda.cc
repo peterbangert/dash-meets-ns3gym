@@ -63,8 +63,15 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
     }
 
   // estimate the bandwidth share
-  double throughputMeasured = ((double)(m_videoData.averageBitrate.at (m_lastVideoIndex) * (m_videoData.segmentDuration / 1e6) )
+  //double throughputMeasured = ((double)(m_videoData.averageBitrate.at (m_lastVideoIndex) * (m_videoData.segmentDuration / 1e6) )
+  //                             / (double)((m_throughput.transmissionEnd.back () - m_throughput.transmissionRequested.back ()) / 1e6)) / 1e6;
+
+  //NS_LOG_UNCOND(m_videoData.segmentSize.at (m_lastVideoIndex).at (segmentCounter-1) * 8 );
+  double throughputMeasured = ((double)(m_videoData.segmentSize.at (m_lastVideoIndex).at (segmentCounter-1) *8 )
                                / (double)((m_throughput.transmissionEnd.back () - m_throughput.transmissionRequested.back ()) / 1e6)) / 1e6;
+
+
+  NS_LOG_UNCOND(clientId << " TP measured: " << throughputMeasured << " dl time: " << ((double)((m_throughput.transmissionEnd.back () - m_throughput.transmissionRequested.back ()) / 1e6)));
 
   if (segmentCounter == 1)
     {
@@ -82,7 +89,7 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
       actualInterrequestTime = m_lastTargetInterrequestTime;
     }
 
-  double bandwidthShare = (m_kappa * (m_omega - std::max (0.0, m_lastBandwidthShare - throughputMeasured + m_omega)))
+  double bandwidthShare = (m_kappa * (m_omega - std::max (0.0, m_lastBandwidthShare - throughputMeasured )))
     * actualInterrequestTime + m_lastBandwidthShare;
   if (bandwidthShare < 0)
     {
@@ -90,11 +97,22 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
     }
   m_lastBandwidthShare = bandwidthShare;
 
+
+  //NS_LOG_UNCOND(clientId << " bw share: " << bandwidthShare);
+  //NS_LOG_UNCOND(clientId << " IR: " << actualInterrequestTime);
+
   double smoothBandwidthShare;
   smoothBandwidthShare = ((-m_alpha
                            * (m_lastSmoothBandwidthShare - bandwidthShare))
                           * actualInterrequestTime)
     + m_lastSmoothBandwidthShare;
+
+ 
+
+  if (smoothBandwidthShare < 0 ) {
+    //NS_LOG_UNCOND(clientId << " Last smooth: " << m_lastSmoothBandwidthShare << " IR: " << actualInterrequestTime );
+    smoothBandwidthShare = bandwidthShare;
+  }
 
   m_lastSmoothBandwidthShare = smoothBandwidthShare;
 
@@ -103,6 +121,9 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
   int rUp = FindLargest (smoothBandwidthShare, segmentCounter - 1, deltaUp);
   int rDown = FindLargest (smoothBandwidthShare, segmentCounter - 1, deltaDown);
 
+  //NS_LOG_UNCOND(clientId << " Smooth BW: " << smoothBandwidthShare);
+  //NS_LOG_UNCOND(clientId << " rup: " << rUp << " rdown: " << rDown);
+  
 
   int videoIndex;
   if ((m_videoData.averageBitrate.at (m_lastVideoIndex))
@@ -116,17 +137,24 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
            <= (m_videoData.averageBitrate.at (rDown)))
     {
       videoIndex = m_lastVideoIndex;
+      
     }
   else
     {
       videoIndex = rDown;
     }
   m_lastVideoIndex = videoIndex;
+  //NS_LOG_UNCOND(clientId << " index: " << videoIndex );
 
   // schedule next download request
 
-  double targetInterrequestTime = std::max (0.0, ((double) ((m_videoData.averageBitrate.at (videoIndex) * (m_videoData.segmentDuration / 1e6)) / 1e6)
-                                                  / smoothBandwidthShare) + m_beta * (m_lastBuffer - m_bMin));
+  //double targetInterrequestTime = std::max (0.0, ((double) ((m_videoData.averageBitrate.at (videoIndex) * (m_videoData.segmentDuration / 1e6)) / 1e6)
+  //                                               / smoothBandwidthShare) + m_beta * (m_lastBuffer - m_bMin));
+
+  double targetInterrequestTime = std::min((m_videoData.segmentDuration * 2 / 1e6), std::max (0.0, ((double) ((m_videoData.segmentSize.at (m_lastVideoIndex).at (segmentCounter) *8 ) / 1e6)
+                                                  / smoothBandwidthShare) + m_beta * (m_lastBuffer - m_bMin)));
+
+  //NS_LOG_UNCOND(clientId << " target IR time: " << targetInterrequestTime );                                  
 
   if (m_throughput.transmissionEnd.back () - m_throughput.transmissionRequested.back () < m_lastTargetInterrequestTime * 1e6)
     {
@@ -137,6 +165,7 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
       delay = 0;
     }
 
+  //NS_LOG_UNCOND(clientId << " delay: " << delay / 1e6 );
   m_lastTargetInterrequestTime = targetInterrequestTime;
 
   m_lastBuffer = (m_bufferData.bufferLevelNew.back () - (timeNow - m_throughput.transmissionEnd.back ())) / 1e6;
@@ -153,15 +182,19 @@ PandaAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
 int
 PandaAlgorithm::FindLargest (const double smoothBandwidthShare, const int64_t segmentCounter, const double delta)
 {
+
   int64_t largestBitrateIndex = 0;
   for (int i = 0; i <= m_highestRepIndex; i++)
     {
-      int64_t currentBitrate =  m_videoData.averageBitrate.at (i) / 1e6;
-      if (currentBitrate <= (smoothBandwidthShare - delta))
+      double currentBitrate =  m_videoData.averageBitrate.at (i) / 1e6;
+
+      if (currentBitrate > (smoothBandwidthShare - delta))
         {
-          largestBitrateIndex = i;
+          break;
         }
+      largestBitrateIndex = i;
     }
+  
   return largestBitrateIndex;
 }
 

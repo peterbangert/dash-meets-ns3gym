@@ -33,11 +33,13 @@ FestiveAlgorithm::FestiveAlgorithm (  const videoData &videoData,
   m_delta (m_videoData.segmentDuration),
   m_alpha (12.0),
   m_highestRepIndex (videoData.averageBitrate.size () - 1),
-  m_thrptThrsh (0.85)
+  m_thrptThrsh (0.85),
+  m_k(40 / (m_videoData.segmentDuration / 1000000) )
 {
   NS_LOG_INFO (this);
   m_smooth.push_back (5);  // after how many steps switch up is possible
   m_smooth.push_back (1);  // switch up by how many representatations at once
+  m_indices.push_back(0);
   NS_ASSERT_MSG (m_highestRepIndex >= 0, "The highest quality representation index should be => 0");
 }
 
@@ -60,10 +62,11 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
   int64_t bufferNow = m_bufferData.bufferLevelNew.back () - (timeNow - m_throughput.transmissionEnd.back ());
 
   // not enough completed requests, select nextRepIndex
-  if (m_throughput.transmissionEnd.size () < 20)
+  if (m_throughput.transmissionEnd.size () <  (unsigned) m_k)
     {
       answer.nextRepIndex = 0;
       answer.decisionCase = 1;
+      m_indices.push_back(0);
       return answer;
     }
 
@@ -80,19 +83,26 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
           thrptEstimationTmp.push_back ((8.0 * m_throughput.bytesReceived.at (sd))
                                         / ((double)((m_throughput.transmissionEnd.at (sd) - m_throughput.transmissionRequested.at (sd)) / 1000000.0)));
         }
-      if (thrptEstimationTmp.size () == 20)
+      if (thrptEstimationTmp.size () == (unsigned) m_k)
         {
           break;
         }
     }
+  
   // calculate harmonic mean of values in thrptEstimationTmp
   double harmonicMeanDenominator = 0;
-  for (uint i = 0; i < thrptEstimationTmp.size (); i++)
+  uint start =0;
+  //if (thrptEstimationTmp.size () > 20){
+  //  start = thrptEstimationTmp.size () -20;
+  //}
+
+  for (uint i = start; i < thrptEstimationTmp.size (); i++)
     {
       harmonicMeanDenominator += 1 / (thrptEstimationTmp.at (i));
     }
   double thrptEstimation = thrptEstimationTmp.size () / harmonicMeanDenominator;
 
+  //NS_LOG_UNCOND(m_k);
   // compute b_delay
   int64_t lowerBound = m_targetBuf - m_delta;
   int64_t upperBound = m_targetBuf + m_delta;
@@ -122,12 +132,12 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
   if (currentRepIndex < m_highestRepIndex && !decisionMade)
     {
       int count = 0;
-      for (unsigned _sd = m_playbackData.playbackIndex.size () - 1; _sd-- > 0; )
+      for (unsigned sd = m_playbackData.playbackIndex.size () - 1; sd-- > 0; )
         {
-          if (currentRepIndex == m_playbackData.playbackIndex.at (_sd))
+          if (currentRepIndex == m_playbackData.playbackIndex.at (sd))
             {
               count++;
-              if (count >= m_smooth.at (0))
+              if (count >= currentRepIndex)
                 {
                   break;
                 }
@@ -137,7 +147,7 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
               break;
             }
         }
-      if (count >= m_smooth.at (0)
+      if (count >= currentRepIndex
           && (double) m_videoData.averageBitrate.at (currentRepIndex + 1) <= thrptEstimation)
         {
           refIndex = currentRepIndex + 1;
@@ -151,28 +161,27 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
     {
       answer.nextRepIndex = currentRepIndex;
       answer.decisionCase = 3;
+      m_indices.push_back(currentRepIndex);
       return answer;
     }
 
   // compute number of bit rate switches in the last 20 seconds
   int64_t numberOfSwitches = 0;
   std::vector<int64_t> foundIndices;
-  for (unsigned _sd = m_playbackData.playbackStart.size () - 1; _sd-- > 0; )
+  if (m_indices.size() >1 ) {
+    for (int sd = m_indices.size () - 2; sd >= 0; sd --)
     {
-      if (m_playbackData.playbackStart.at (_sd) < timeNow)
+      if ((int)(m_indices.size () - 1 - sd)   > (int)(20 / (m_videoData.segmentDuration / 1000000)))
         {
           break;
         }
-      else if (currentRepIndex != m_playbackData.playbackIndex.at (_sd))
+      else if (m_indices.at (sd +1) != m_indices.at (sd))
         {
-          if (std::find (foundIndices.begin (), foundIndices.end (), currentRepIndex) != foundIndices.end ())
-            {
-              continue;
-            }
           numberOfSwitches++;
-          foundIndices.push_back (currentRepIndex);
         }
     }
+  }
+  
   double scoreEfficiencyCurrent = std::abs ((double)m_videoData.averageBitrate.at (currentRepIndex)
                                             / double(std::min (thrptEstimation, (double)m_videoData.averageBitrate.at (refIndex))) - 1.0);
 
@@ -180,17 +189,19 @@ FestiveAlgorithm::GetNextRep (const int64_t segmentCounter, int64_t clientId)
                                         / double(std::min (thrptEstimation, (double)m_videoData.averageBitrate.at (refIndex))) - 1.0);
 
   double scoreStabilityCurrent = pow (2.0, (double)numberOfSwitches);
-  double scoreStabilityRef = pow (2.0, ((double)numberOfSwitches)) + 1.0;
+  double scoreStabilityRef = pow (2.0, ((double)numberOfSwitches + 1.0 )) ;
 
   if ((scoreStabilityCurrent + m_alpha * scoreEfficiencyCurrent) < scoreStabilityRef + m_alpha * scoreEfficiencyRef)
     {
       answer.nextRepIndex = currentRepIndex;
       answer.decisionCase = 4;
+      m_indices.push_back(currentRepIndex);
       return answer;
     }
   else
     {
       answer.nextRepIndex = refIndex;
+      m_indices.push_back(refIndex);
       return answer;
     }
 

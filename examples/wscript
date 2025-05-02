@@ -3,10 +3,10 @@
 def build(bld):
     obj = bld.create_ns3_program('tcp-stream', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym'])
     obj.source = 'tcp-stream.cc'
-    obj1 = bld.create_ns3_program('tcp-stream-ethernet', ['dash-meets-ns3gym', 'internet', 'csma', 'buildings', 'applications', 'point-to-point','opengym'])
-    obj1.source = 'tcp-stream-ethernet.cc'
-    obj2 = bld.create_ns3_program('tcp-stream-interrupts', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym'])
-    obj2.source = 'tcp-stream-interrupts.cc'
-    obj3 = bld.create_ns3_program('tcp-stream-bitrate', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym'])
-    obj3.source = 'tcp-stream-bitrate.cc'
+    obj4 = bld.create_ns3_program('tcp-stream-compete', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym','flow-monitor','traffic-control'])
+    obj4.source = 'tcp-stream-compete.cc'
+    obj5 = bld.create_ns3_program('tcp-stream-compete-wifi', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym','flow-monitor','traffic-control'])
+    obj5.source = 'tcp-stream-compete-wifi.cc'
+    obj5 = bld.create_ns3_program('tcp-stream-compete-better', ['dash-meets-ns3gym', 'internet', 'wifi', 'buildings', 'applications', 'point-to-point','opengym','flow-monitor','csma'])
+    obj5.source = 'tcp-stream-compete-better.cc'
     
